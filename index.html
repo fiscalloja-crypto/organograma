@@ -3,19 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Organograma Interativo</title>
+    <title>Organograma e Fluxograma Interativo</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .canvas-grid {
-            background-color: #f8fafc;
+            background-color: #f1f5f9;
             background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-            background-size: 40px 40px;
+            background-size: 30px 30px;
         }
         .card-shadow {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
         }
     </style>
 </head>
@@ -23,29 +33,34 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect } = React;
 
         const App = () => {
             const [roles, setRoles] = useState(() => {
-                const saved = localStorage.getItem('org_data');
+                const saved = localStorage.getItem('org_data_v2');
                 return saved ? JSON.parse(saved) : [
-                    { id: '1', title: 'Gerente Geral', person: 'Nome do Gestor', x: 450, y: 50, color: '#2563eb', parentId: null },
-                    { id: '2', title: 'Vendedor 1', person: 'João Silva', x: 200, y: 250, color: '#10b981', parentId: '1' },
-                    { id: '3', title: 'Vendedor 2', person: 'Maria Souza', x: 700, y: 250, color: '#10b981', parentId: '1' }
+                    { 
+                        id: '1', title: 'Gerente Geral', person: 'Nome do Gestor', 
+                        x: 500, y: 50, color: '#1e40af', parentId: null,
+                        activities: ['Gestão de Equipe', 'Análise de DRE'],
+                        flow: ['Reunião Matinal', 'Conferência de Caixa', 'Relatório Diário']
+                    }
                 ];
             });
 
             const [selectedId, setSelectedId] = useState(null);
             const [dragging, setDragging] = useState(null);
+            const [showDetails, setShowDetails] = useState(true);
 
             useEffect(() => {
-                localStorage.setItem('org_data', JSON.stringify(roles));
+                localStorage.setItem('org_data_v2', JSON.stringify(roles));
             }, [roles]);
 
             const handleMouseDown = (e, id) => {
                 if (e.target.closest('.no-drag')) return;
                 const role = roles.find(r => r.id === id);
                 setSelectedId(id);
+                const rect = e.currentTarget.getBoundingClientRect();
                 setDragging({
                     id,
                     startX: e.clientX,
@@ -72,12 +87,18 @@
                     id: newId,
                     title: 'Nova Função',
                     person: 'Nome',
-                    x: 100,
-                    y: 100,
+                    x: 200,
+                    y: 200,
                     color: '#64748b',
-                    parentId: selectedId || null
+                    parentId: selectedId || null,
+                    activities: [],
+                    flow: []
                 }]);
                 setSelectedId(newId);
+            };
+
+            const updateSelected = (field, value) => {
+                setRoles(prev => prev.map(r => r.id === selectedId ? { ...r, [field]: value } : r));
             };
 
             const deleteRole = (id) => {
@@ -88,56 +109,148 @@
             const selectedRole = roles.find(r => r.id === selectedId);
 
             return (
-                <div className="flex h-screen w-full bg-slate-100 overflow-hidden font-sans select-none" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
-                    {/* Lateral */}
-                    <div className="w-80 bg-white border-r border-slate-200 shadow-xl z-30 p-6 overflow-y-auto">
-                        <h1 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                            <span>⚡</span> Organograma
-                        </h1>
+                <div className="flex h-screen w-full bg-slate-50 overflow-hidden font-sans select-none" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
+                    
+                    {/* Painel Lateral */}
+                    <div className="w-96 bg-white border-r border-slate-200 shadow-2xl z-30 flex flex-col">
+                        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                            <h1 className="text-xl font-black text-slate-800 flex items-center gap-2 italic">
+                                <span className="bg-blue-600 text-white p-1 rounded">GO</span> GESTÃO
+                            </h1>
+                        </div>
                         
-                        <button onClick={addRole} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl mb-8 shadow-lg transition-all">
-                            + Adicionar Cargo
-                        </button>
+                        <div className="p-6 flex-1 overflow-y-auto custom-scroll space-y-6">
+                            <button onClick={addRole} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+                                <span>+</span> Novo Cargo
+                            </button>
 
-                        {selectedRole ? (
-                            <div className="space-y-4">
-                                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Editando Item</h2>
-                                <input type="text" value={selectedRole.title} onChange={e => setRoles(prev => prev.map(r => r.id === selectedId ? {...r, title: e.target.value} : r))} className="w-full p-2 border rounded-lg" placeholder="Cargo" />
-                                <input type="text" value={selectedRole.person} onChange={e => setRoles(prev => prev.map(r => r.id === selectedId ? {...r, person: e.target.value} : r))} className="w-full p-2 border rounded-lg" placeholder="Nome" />
-                                <select value={selectedRole.parentId || ''} onChange={e => setRoles(prev => prev.map(r => r.id === selectedId ? {...r, parentId: e.target.value || null} : r))} className="w-full p-2 border rounded-lg">
-                                    <option value="">Sem Superior</option>
-                                    {roles.filter(r => r.id !== selectedId).map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
-                                </select>
-                                <input type="color" value={selectedRole.color} onChange={e => setRoles(prev => prev.map(r => r.id === selectedId ? {...r, color: e.target.value} : r))} className="w-full h-10 rounded-lg cursor-pointer" />
-                                <button onClick={() => deleteRole(selectedId)} className="w-full text-red-500 hover:bg-red-50 py-2 rounded-lg mt-4">Excluir Cargo</button>
-                            </div>
-                        ) : (
-                            <p className="text-slate-400 text-center mt-20">Selecione um cartão para editar ou arraste para mover.</p>
-                        )}
+                            {selectedRole ? (
+                                <div className="space-y-5 animate-in fade-in duration-300">
+                                    <div className="flex justify-between items-center border-b pb-2">
+                                        <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">Configuração</h2>
+                                        <button onClick={() => setSelectedId(null)} className="text-xs text-blue-500 font-bold hover:underline">Fechar</button>
+                                    </div>
+                                    
+                                    <div className="space-y-3">
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase">Informação Básica</label>
+                                        <input type="text" value={selectedRole.title} onChange={e => updateSelected('title', e.target.value)} className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Cargo" />
+                                        <input type="text" value={selectedRole.person} onChange={e => updateSelected('person', e.target.value)} className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Responsável" />
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase">Hierarquia e Estilo</label>
+                                        <select value={selectedRole.parentId || ''} onChange={e => updateSelected('parentId', e.target.value || null)} className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm">
+                                            <option value="">Sem Superior (Topo)</option>
+                                            {roles.filter(r => r.id !== selectedId).map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
+                                        </select>
+                                        <input type="color" value={selectedRole.color} onChange={e => updateSelected('color', e.target.value)} className="w-full h-8 rounded-lg cursor-pointer border-none" />
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase">📌 Atividades do Cargo</label>
+                                        <textarea 
+                                            value={selectedRole.activities?.join('\n') || ''} 
+                                            onChange={e => updateSelected('activities', e.target.value.split('\n'))}
+                                            className="w-full p-2.5 bg-slate-50 border rounded-lg text-xs h-24 outline-none focus:ring-2 focus:ring-blue-500 no-drag"
+                                            placeholder="Uma atividade por linha..."
+                                        />
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase">🔄 Fluxograma (Passo a Passo)</label>
+                                        <textarea 
+                                            value={selectedRole.flow?.join('\n') || ''} 
+                                            onChange={e => updateSelected('flow', e.target.value.split('\n'))}
+                                            className="w-full p-2.5 bg-slate-50 border rounded-lg text-xs h-24 outline-none focus:ring-2 focus:ring-blue-500 no-drag"
+                                            placeholder="Descreva o fluxo de trabalho..."
+                                        />
+                                    </div>
+
+                                    <button onClick={() => deleteRole(selectedId)} className="w-full text-red-400 hover:text-red-600 font-bold text-xs py-2 border border-red-100 rounded-lg hover:bg-red-50 transition-colors uppercase tracking-widest">Excluir Função</button>
+                                </div>
+                            ) : (
+                                <div className="text-center py-20 px-4">
+                                    <div className="text-4xl mb-4">🖱️</div>
+                                    <p className="text-slate-400 text-sm italic font-medium">Selecione um item no quadro para editar as funções e o fluxo.</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
-                    {/* Quadro */}
+                    {/* Área do Quadro */}
                     <div className="flex-1 relative canvas-grid overflow-hidden">
-                        <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                        <div className="absolute top-6 left-6 z-20 flex gap-4">
+                            <div className="bg-white/80 backdrop-blur shadow-sm p-1 rounded-lg border border-slate-200 flex text-[10px] font-bold uppercase tracking-tighter">
+                                <button onClick={() => setShowDetails(!showDetails)} className={`px-3 py-1.5 rounded ${showDetails ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>
+                                    {showDetails ? 'Ocultar Detalhes' : 'Ver Detalhes'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Conectores SVG Dinâmicos */}
+                        <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
+                            <defs>
+                                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+                                </marker>
+                            </defs>
                             {roles.map(role => {
                                 if (!role.parentId) return null;
                                 const parent = roles.find(r => r.id === role.parentId);
                                 if (!parent) return null;
+
+                                // Cálculo de pontos para linhas curvas (estilo fluxo)
+                                const startX = parent.x + 112;
+                                const startY = parent.y + 70;
+                                const endX = role.x + 112;
+                                const endY = role.y;
+                                
+                                const midY = (startY + endY) / 2;
+
                                 return (
-                                    <line key={role.id} x1={parent.x + 100} y1={parent.y + 80} x2={role.x + 100} y2={role.y} stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
+                                    <path 
+                                        key={`path-${role.id}`}
+                                        d={`M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`}
+                                        fill="none"
+                                        stroke="#cbd5e1"
+                                        strokeWidth="2"
+                                        markerEnd="url(#arrowhead)"
+                                    />
                                 );
                             })}
                         </svg>
 
+                        {/* Cartões do Organograma */}
                         {roles.map(role => (
                             <div 
                                 key={role.id} 
                                 onMouseDown={(e) => handleMouseDown(e, role.id)}
-                                style={{ transform: `translate(${role.x}px, ${role.y}px)`, backgroundColor: role.color }}
-                                className={`absolute w-48 p-4 rounded-xl text-white text-center cursor-grab active:cursor-grabbing card-shadow border-2 transition-transform ${selectedId === role.id ? 'border-yellow-400 scale-105 z-50' : 'border-transparent'}`}
+                                style={{ 
+                                    left: role.x, 
+                                    top: role.y, 
+                                    borderTopColor: role.color 
+                                }}
+                                className={`absolute w-56 bg-white rounded-xl shadow-lg cursor-grab active:cursor-grabbing card-shadow border-t-8 transition-all duration-200 ${selectedId === role.id ? 'ring-4 ring-blue-400/30 scale-105 z-50' : 'z-10 hover:translate-y-[-4px]'}`}
                             >
-                                <div className="font-bold text-sm uppercase">{role.title}</div>
-                                <div className="text-xs opacity-80 mt-1 italic border-top border-white/20 pt-1">{role.person}</div>
+                                <div className="p-4">
+                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1 truncate">{role.title}</div>
+                                    <div className="font-bold text-slate-800 text-sm truncate leading-none mb-2">{role.person}</div>
+                                    
+                                    {(showDetails && (role.activities?.length > 0 || role.flow?.length > 0)) && (
+                                        <div className="mt-3 pt-3 border-t border-slate-50 space-y-2 animate-in slide-in-from-top-1">
+                                            {role.activities?.length > 0 && (
+                                                <div className="flex flex-wrap gap-1">
+                                                    <span className="text-[8px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-bold uppercase">📌 {role.activities.length} Atividades</span>
+                                                </div>
+                                            )}
+                                            {role.flow?.length > 0 && (
+                                                <div className="flex flex-wrap gap-1">
+                                                    <span className="text-[8px] bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded-full font-bold uppercase">🔄 {role.flow.length} Etapas</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     </div>
