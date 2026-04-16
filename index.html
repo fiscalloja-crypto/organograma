@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organograma Interativo</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .canvas-grid {
+            background-color: #f8fafc;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .card-shadow {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const App = () => {
+            const [roles, setRoles] = useState(() => {
+                const saved = localStorage.getItem('org_data');
+                return saved ? JSON.parse(saved) : [
+                    { id: '1', title: 'Gerente Geral', person: 'Nome do Gestor', x: 450, y: 50, color: '#2563eb', parentId: null },
+                    { id: '2', title: 'Vendedor 1', person: 'João Silva', x: 200, y: 250, color: '#10b981', parentId: '1' },
+                    { id: '3', title: 'Vendedor 2', person: 'Maria Souza', x: 700, y: 250, color: '#10b981', parentId: '1' }
+                ];
+            });
+
+            const [selectedId, setSelectedId] = useState(null);
+            const [dragging, setDragging] = useState(null);
+
+            useEffect(() => {
+                localStorage.setItem('org_data', JSON.stringify(roles));
+            }, [roles]);
+
+            const handleMouseDown = (e, id) => {
+                if (e.target.closest('.no-drag')) return;
+                const role = roles.find(r => r.id === id);
+                setSelectedId(id);
+                setDragging({
+                    id,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    origX: role.x,
+                    origY: role.y
+                });
+            };
+
+            const handleMouseMove = (e) => {
+                if (!dragging) return;
+                const dx = e.clientX - dragging.startX;
+                const dy = e.clientY - dragging.startY;
+                setRoles(prev => prev.map(r => 
+                    r.id === dragging.id ? { ...r, x: dragging.origX + dx, y: dragging.origY + dy } : r
+                ));
+            };
+
+            const handleMouseUp = () => setDragging(null);
+
+            const addRole = () => {
+                const newId = Date.now().toString();
+                setRoles([...roles, {
+                    id: newId,
+                    title: 'Nova Função',
+                    person: 'Nome',
+                    x: 100,
+                    y: 100,
+                    color: '#64748b',
+                    parentId: selectedId || null
+                }]);
+                setSelectedId(newId);
+            };
+
+            const deleteRole = (id) => {
+                setRoles(prev => prev.filter(r => r.id !== id).map(r => r.parentId === id ? { ...r, parentId: null } : r));
+                setSelectedId(null);
+            };
+
+            const selectedRole = roles.find(r => r.id === selectedId);
+
+            return (
+                <div className="flex h-screen w-full bg-slate-100 overflow-hidden font-sans select-none" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
+                    {/* Lateral */}
+                    <div className="w-80 bg-white border-r border-slate-200 shadow-xl z-30 p-6 overflow-y-auto">
+                        <h1 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                            <span>⚡</span> Organograma
+                        </h1>
+                        
+                        <button onClick={addRole} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl mb-8 shadow-lg transition-all">
+                            + Adicionar Cargo
+                        </button>
+
+                        {selectedRole ? (
+                            <div className="space-y-4">
+                                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Editando Item</h2>
+                                <input type="text" value={selectedRole.title} onChange={e => setRoles(prev => prev.map(r => r.id === selectedId ? {...r, title: e.target.value} : r))} className="w-full p-2 border rounded-lg" placeholder="Cargo" />
+                                <input type="text" value={selectedRole.person} onChange={e => setRoles(prev => prev.map(r => r.id === selectedId ? {...r, person: e.target.value} : r))} className="w-full p-2 border rounded-lg" placeholder="Nome" />
+                                <select value={selectedRole.parentId || ''} onChange={e => setRoles(prev => prev.map(r => r.id === selectedId ? {...r, parentId: e.target.value || null} : r))} className="w-full p-2 border rounded-lg">
+                                    <option value="">Sem Superior</option>
+                                    {roles.filter(r => r.id !== selectedId).map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
+                                </select>
+                                <input type="color" value={selectedRole.color} onChange={e => setRoles(prev => prev.map(r => r.id === selectedId ? {...r, color: e.target.value} : r))} className="w-full h-10 rounded-lg cursor-pointer" />
+                                <button onClick={() => deleteRole(selectedId)} className="w-full text-red-500 hover:bg-red-50 py-2 rounded-lg mt-4">Excluir Cargo</button>
+                            </div>
+                        ) : (
+                            <p className="text-slate-400 text-center mt-20">Selecione um cartão para editar ou arraste para mover.</p>
+                        )}
+                    </div>
+
+                    {/* Quadro */}
+                    <div className="flex-1 relative canvas-grid overflow-hidden">
+                        <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                            {roles.map(role => {
+                                if (!role.parentId) return null;
+                                const parent = roles.find(r => r.id === role.parentId);
+                                if (!parent) return null;
+                                return (
+                                    <line key={role.id} x1={parent.x + 100} y1={parent.y + 80} x2={role.x + 100} y2={role.y} stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
+                                );
+                            })}
+                        </svg>
+
+                        {roles.map(role => (
+                            <div 
+                                key={role.id} 
+                                onMouseDown={(e) => handleMouseDown(e, role.id)}
+                                style={{ transform: `translate(${role.x}px, ${role.y}px)`, backgroundColor: role.color }}
+                                className={`absolute w-48 p-4 rounded-xl text-white text-center cursor-grab active:cursor-grabbing card-shadow border-2 transition-transform ${selectedId === role.id ? 'border-yellow-400 scale-105 z-50' : 'border-transparent'}`}
+                            >
+                                <div className="font-bold text-sm uppercase">{role.title}</div>
+                                <div className="text-xs opacity-80 mt-1 italic border-top border-white/20 pt-1">{role.person}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
