@@ -1,909 +1,1191 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GO GESTÃO - Organograma Profissional</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;0,900;1,400&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GO GESTÃO</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;0,900&family=DM+Mono:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; width: 100%; overflow: hidden; }
+    body { font-family: 'DM Sans', sans-serif; background: #f1f5f9; }
+    button { font-family: inherit; cursor: pointer; }
+    input, select, textarea { font-family: inherit; }
 
-    <style>
-        /* ── Reset & Base ─────────────────────────────── */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body, #root { height: 100%; width: 100%; overflow: hidden; }
-        body { font-family: 'DM Sans', sans-serif; background: #f1f5f9; }
-        button { font-family: inherit; cursor: pointer; }
-        input, select, textarea { font-family: inherit; }
-        .mono { font-family: 'DM Mono', monospace; }
+    /* ── App shell ─────────────────────────── */
+    .app { display:flex; height:100vh; width:100vw; overflow:hidden; user-select:none; flex-direction:column; }
 
-        /* ── Layout principal ─────────────────────────── */
-        .app {
-            display: flex;
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
-            user-select: none;
-        }
+    /* ── Top nav tabs ──────────────────────── */
+    .top-nav {
+      display: flex;
+      align-items: stretch;
+      background: #1e293b;
+      flex-shrink: 0;
+      height: 48px;
+      z-index: 100;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 20px;
+      font-size: 14px; font-weight: 900; color: #fff; font-style: italic;
+      border-right: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+    .nav-logo-badge {
+      background: #3b82f6; color: #fff;
+      padding: 2px 7px; border-radius: 5px; font-size: 12px;
+    }
+    .nav-tabs { display:flex; align-items:stretch; }
+    .nav-tab {
+      display: flex; align-items: center; gap: 7px;
+      padding: 0 20px;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+      color: #94a3b8;
+      border: none; background: none;
+      border-bottom: 3px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      cursor: pointer;
+    }
+    .nav-tab:hover { color: #e2e8f0; }
+    .nav-tab.active { color: #fff; border-bottom-color: #3b82f6; }
 
-        /* ── Sidebar ──────────────────────────────────── */
-        .sidebar {
-            width: 300px;
-            flex-shrink: 0;
-            background: #fff;
-            border-right: 1px solid #e2e8f0;
-            box-shadow: 4px 0 24px rgba(0,0,0,0.07);
-            z-index: 30;
-            display: flex;
-            flex-direction: column;
-        }
-        .sidebar-header {
-            padding: 14px 20px;
-            background: #1e293b;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-        }
-        .logo {
-            font-size: 15px;
-            font-weight: 900;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            letter-spacing: -0.02em;
-            font-style: italic;
-        }
-        .logo-badge {
-            background: #3b82f6;
-            color: #fff;
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-size: 13px;
-        }
-        .btn-clear {
-            background: none;
-            border: none;
-            color: #94a3b8;
-            font-size: 18px;
-            padding: 4px;
-            border-radius: 6px;
-            transition: color 0.15s;
-            line-height: 1;
-        }
-        .btn-clear:hover { color: #f87171; }
+    /* ── Workspace (sidebar + canvas) ─────── */
+    .workspace { display:flex; flex:1; overflow:hidden; }
 
-        .sidebar-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-        .sidebar-body::-webkit-scrollbar { width: 4px; }
-        .sidebar-body::-webkit-scrollbar-track { background: #f8fafc; }
-        .sidebar-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    /* ── Sidebar ───────────────────────────── */
+    .sidebar {
+      width: 288px; flex-shrink: 0;
+      background: #fff; border-right: 1px solid #e2e8f0;
+      box-shadow: 3px 0 20px rgba(0,0,0,0.06);
+      z-index: 30; display:flex; flex-direction:column;
+    }
+    .sidebar-body {
+      flex:1; overflow-y:auto; padding:16px 18px;
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .sidebar-body::-webkit-scrollbar { width:4px; }
+    .sidebar-body::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:10px; }
+    .sidebar-footer {
+      padding:12px 18px; border-top:1px solid #f1f5f9;
+      display:flex; flex-direction:column; gap:7px; flex-shrink:0;
+    }
+    .footer-row { display:flex; gap:7px; }
 
-        .sidebar-footer {
-            padding: 14px 20px;
-            border-top: 1px solid #f1f5f9;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-        .footer-row { display: flex; gap: 8px; }
+    /* ── Buttons ───────────────────────────── */
+    .btn-primary {
+      background:#1e40af; color:#fff; border:none; border-radius:9px;
+      font-weight:700; font-size:11px; padding:10px 14px; width:100%;
+      display:flex; align-items:center; justify-content:center; gap:6px;
+      letter-spacing:0.05em; text-transform:uppercase;
+      transition:background 0.15s, transform 0.1s;
+    }
+    .btn-primary:hover { background:#1d4ed8; }
+    .btn-primary:active { transform:scale(0.97); }
+    .btn-primary.green { background:#065f46; }
+    .btn-primary.green:hover { background:#047857; }
 
-        /* ── Buttons ──────────────────────────────────── */
-        .btn-primary {
-            background: #1e40af;
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 12px;
-            padding: 11px 16px;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            transition: background 0.15s, transform 0.1s;
-        }
-        .btn-primary:hover { background: #1d4ed8; }
-        .btn-primary:active { transform: scale(0.97); }
+    .btn-secondary {
+      background:#f8fafc; color:#475569; border:1px solid #e2e8f0;
+      border-radius:7px; font-weight:600; font-size:11px; padding:7px 10px;
+      flex:1; text-align:center; transition:background 0.15s; white-space:nowrap;
+    }
+    .btn-secondary:hover { background:#f1f5f9; }
+    .btn-undo {
+      width:100%; background:none; border:1px solid #e2e8f0; border-radius:7px;
+      color:#64748b; font-size:11px; font-weight:600; padding:6px 12px; transition:background 0.15s;
+    }
+    .btn-undo:hover { background:#f8fafc; }
+    .btn-delete {
+      width:100%; background:none; border:1px solid #fee2e2; border-radius:7px;
+      color:#f87171; font-size:11px; font-weight:700; padding:8px;
+      text-transform:uppercase; letter-spacing:0.05em; transition:all 0.15s;
+    }
+    .btn-delete:hover { background:#fff1f2; color:#dc2626; }
+    .btn-icon {
+      background:none; border:none; font-size:16px; padding:4px 6px;
+      color:#94a3b8; border-radius:5px; transition:color 0.15s;
+    }
+    .btn-icon:hover { color:#f87171; }
+    .btn-details {
+      border-radius:7px; font-size:11px; font-weight:700; padding:7px 13px;
+      text-transform:uppercase; letter-spacing:0.04em; transition:all 0.15s; border:1px solid #e2e8f0;
+    }
+    .btn-details.on  { background:#2563eb; color:#fff; border-color:#2563eb; }
+    .btn-details.off { background:#fff; color:#475569; }
 
-        .btn-secondary {
-            background: #f8fafc;
-            color: #475569;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 11px;
-            padding: 8px 12px;
-            flex: 1;
-            text-align: center;
-            transition: background 0.15s;
-            white-space: nowrap;
-        }
-        .btn-secondary:hover { background: #f1f5f9; }
+    /* ── Form ──────────────────────────────── */
+    .field-label {
+      display:block; font-size:9px; font-weight:800; color:#94a3b8;
+      text-transform:uppercase; letter-spacing:0.08em; margin-bottom:5px;
+    }
+    .field-group { display:flex; flex-direction:column; gap:11px; }
+    .field-section { display:flex; flex-direction:column; gap:5px; }
+    .input-text, .input-select {
+      width:100%; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0;
+      border-radius:7px; font-size:12px; color:#1e293b; outline:none;
+      transition:border-color 0.15s, box-shadow 0.15s;
+    }
+    .input-text:focus, .input-select:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,0.1); }
+    .input-textarea {
+      width:100%; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0;
+      border-radius:7px; font-size:11px; color:#334155; outline:none;
+      resize:none; height:72px; line-height:1.6;
+      transition:border-color 0.15s, box-shadow 0.15s;
+    }
+    .input-textarea:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,0.1); }
+    .section-divider { border:none; border-top:1px solid #f1f5f9; }
+    .config-header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:9px; }
+    .config-title { font-size:9px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.1em; }
+    .config-close { background:none; border:none; font-size:11px; font-weight:700; color:#3b82f6; }
+    .config-close:hover { text-decoration:underline; }
+    .palette { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+    .palette-dot { width:24px; height:24px; border-radius:7px; border:none; cursor:pointer; transition:transform 0.12s; }
+    .palette-dot:hover { transform:scale(1.15); }
+    .palette-dot.active { outline:2.5px solid #475569; outline-offset:2px; transform:scale(1.15); }
+    .palette-color-input { width:24px; height:24px; border-radius:7px; border:1px solid #e2e8f0; padding:0; cursor:pointer; }
+    .zoom-section { display:flex; flex-direction:column; gap:5px; }
+    .zoom-label { font-size:9px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.08em; }
+    input[type=range] { width:100%; accent-color:#1e40af; }
+    .empty-state { text-align:center; padding:24px 14px; background:#f8fafc; border-radius:10px; border:2px dashed #e2e8f0; }
+    .empty-state p { color:#94a3b8; font-size:12px; font-weight:500; }
 
-        .btn-undo {
-            width: 100%;
-            background: none;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            color: #64748b;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 7px 12px;
-            transition: background 0.15s;
-        }
-        .btn-undo:hover { background: #f8fafc; }
+    /* ── Canvas shared ─────────────────────── */
+    .canvas-area { flex:1; position:relative; display:flex; flex-direction:column; overflow:hidden; }
+    .canvas-grid {
+      flex:1; position:relative; overflow:hidden;
+      background-color:#f1f5f9;
+      background-image:radial-gradient(#cbd5e1 1px, transparent 1px);
+      background-size:28px 28px;
+    }
+    .canvas-world { position:absolute; width:4000px; height:4000px; }
+    .canvas-toolbar { position:absolute; top:14px; left:14px; z-index:20; display:flex; gap:7px; }
+    .canvas-hint {
+      position:absolute; top:14px; right:14px; z-index:10;
+      background:rgba(255,255,255,0.88); backdrop-filter:blur(4px);
+      color:#94a3b8; font-size:10px; font-weight:600;
+      padding:5px 12px; border-radius:20px; border:1px solid #e2e8f0;
+      box-shadow:0 2px 8px rgba(0,0,0,0.06);
+    }
 
-        .btn-delete {
-            width: 100%;
-            background: none;
-            border: 1px solid #fee2e2;
-            border-radius: 8px;
-            color: #f87171;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 9px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            transition: all 0.15s;
-        }
-        .btn-delete:hover { background: #fff1f2; color: #dc2626; }
+    /* ── Org cards ─────────────────────────── */
+    .org-card {
+      position:absolute; width:210px;
+      background:#fff; border-radius:11px; border-top:5px solid #1e40af;
+      box-shadow:0 5px 18px -4px rgba(0,0,0,0.10), 0 2px 6px -2px rgba(0,0,0,0.07);
+      cursor:grab; touch-action:none; z-index:10; transition:box-shadow 0.15s;
+    }
+    .org-card:active { cursor:grabbing; }
+    .org-card.selected { outline:3px solid #3b82f6; outline-offset:3px; z-index:50; }
+    .card-inner { padding:11px 13px; }
+    .card-title-row { display:flex; align-items:center; gap:6px; margin-bottom:3px; }
+    .card-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .card-title { font-size:9px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.08em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .card-person { font-size:13px; font-weight:700; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .card-tags { margin-top:7px; padding-top:7px; border-top:1px solid #f1f5f9; display:flex; flex-wrap:wrap; gap:4px; }
+    .tag { font-size:8px; font-weight:700; text-transform:uppercase; padding:2px 5px; border-radius:4px; }
+    .tag-act { background:#f1f5f9; color:#64748b; }
+    .tag-flow { background:#eff6ff; color:#3b82f6; }
 
-        .btn-details {
-            border-radius: 8px;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 8px 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            transition: all 0.15s;
-            border: 1px solid #e2e8f0;
-        }
-        .btn-details.on  { background: #2563eb; color: #fff; border-color: #2563eb; }
-        .btn-details.off { background: #fff; color: #475569; }
-        .btn-details:hover { opacity: 0.85; }
+    /* ── Flow blocks ───────────────────────── */
+    .flow-block {
+      position:absolute; cursor:grab; touch-action:none; z-index:10;
+      transition:filter 0.15s;
+    }
+    .flow-block:active { cursor:grabbing; }
+    .flow-block.selected { z-index:50; filter:drop-shadow(0 0 0 3px #3b82f6) drop-shadow(0 0 6px rgba(59,130,246,0.4)); }
 
-        /* ── Form ─────────────────────────────────────── */
-        .field-label {
-            display: block;
-            font-size: 9px;
-            font-weight: 800;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 6px;
-        }
-        .field-group { display: flex; flex-direction: column; gap: 12px; }
-        .field-section { display: flex; flex-direction: column; gap: 6px; }
+    /* block shapes via SVG foreignObject — we use div+svg overlay approach */
+    .fblock-wrap { position:relative; }
 
-        .input-text, .input-select {
-            width: 100%;
-            padding: 9px 11px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 13px;
-            color: #1e293b;
-            outline: none;
-            transition: border-color 0.15s, box-shadow 0.15s;
-        }
-        .input-text:focus, .input-select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
-        }
+    /* ── Flow connection in-progress line ──── */
+    .conn-preview { pointer-events:none; }
 
-        .input-textarea {
-            width: 100%;
-            padding: 9px 11px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 11px;
-            color: #334155;
-            outline: none;
-            resize: none;
-            height: 76px;
-            line-height: 1.6;
-            transition: border-color 0.15s, box-shadow 0.15s;
-        }
-        .input-textarea:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
-        }
+    /* ── Port dots (connection handles) ───── */
+    .port {
+      position:absolute; width:11px; height:11px;
+      background:#fff; border:2px solid #94a3b8; border-radius:50%;
+      cursor:crosshair; z-index:60;
+      transition:border-color 0.12s, transform 0.12s;
+    }
+    .port:hover { border-color:#3b82f6; transform:scale(1.4); }
 
-        .section-divider {
-            border: none;
-            border-top: 1px solid #f1f5f9;
-        }
+    /* ── Block palette (sidebar) ───────────── */
+    .block-palette { display:flex; flex-direction:column; gap:6px; }
+    .block-tile {
+      display:flex; align-items:center; gap:10px;
+      padding:8px 10px; border-radius:8px;
+      border:1px solid #e2e8f0; background:#f8fafc;
+      cursor:pointer; transition:background 0.15s, border-color 0.15s;
+      font-size:12px; font-weight:600; color:#334155;
+    }
+    .block-tile:hover { background:#eff6ff; border-color:#93c5fd; }
+    .block-tile svg { flex-shrink:0; }
 
-        .config-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 10px;
-        }
-        .config-title {
-            font-size: 9px;
-            font-weight: 800;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
-        .config-close {
-            background: none;
-            border: none;
-            font-size: 11px;
-            font-weight: 700;
-            color: #3b82f6;
-        }
-        .config-close:hover { text-decoration: underline; }
+    /* ── Role selector (fluxo tab) ─────────── */
+    .role-selector {
+      display:flex; flex-direction:column; gap:5px;
+    }
+    .role-chip {
+      display:flex; align-items:center; gap:8px;
+      padding:8px 10px; border-radius:8px; border:1px solid #e2e8f0;
+      background:#fff; cursor:pointer; font-size:12px; font-weight:600; color:#334155;
+      transition:all 0.15s;
+    }
+    .role-chip:hover { border-color:#93c5fd; background:#eff6ff; }
+    .role-chip.active { border-color:#3b82f6; background:#eff6ff; color:#1d4ed8; }
+    .role-chip-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+    .role-chip-sub { font-size:10px; font-weight:500; color:#94a3b8; margin-left:auto; white-space:nowrap; }
 
-        /* ── Palette ──────────────────────────────────── */
-        .palette {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 7px;
-            align-items: center;
-        }
-        .palette-dot {
-            width: 26px; height: 26px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            transition: transform 0.12s;
-        }
-        .palette-dot:hover { transform: scale(1.15); }
-        .palette-dot.active { outline: 2.5px solid #475569; outline-offset: 2px; transform: scale(1.15); }
-        .palette-color-input {
-            width: 26px; height: 26px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            padding: 0;
-            cursor: pointer;
-        }
+    /* ── Connection label (Sim/Não) ────────── */
+    .conn-label {
+      position:absolute; background:#fff; border:1px solid #e2e8f0;
+      border-radius:5px; font-size:9px; font-weight:800; letter-spacing:0.06em;
+      padding:1px 5px; pointer-events:none; text-transform:uppercase;
+      box-shadow:0 1px 4px rgba(0,0,0,0.08);
+    }
+    .conn-label.sim { color:#16a34a; border-color:#bbf7d0; }
+    .conn-label.nao { color:#dc2626; border-color:#fecaca; }
 
-        /* ── Zoom ─────────────────────────────────────── */
-        .zoom-section { display: flex; flex-direction: column; gap: 6px; }
-        .zoom-label {
-            font-size: 9px;
-            font-weight: 800;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-        input[type=range] { width: 100%; accent-color: #1e40af; }
+    /* ── Toast ─────────────────────────────── */
+    .toast {
+      position:fixed; bottom:22px; left:50%; z-index:9999;
+      background:#1e293b; color:#fff; font-size:12px; font-weight:700;
+      padding:9px 18px; border-radius:20px;
+      box-shadow:0 8px 24px rgba(0,0,0,0.18); pointer-events:none;
+    }
+    @keyframes slideUp   { from{opacity:0;transform:translateY(14px) translateX(-50%)} to{opacity:1;transform:translateY(0) translateX(-50%)} }
+    @keyframes slideDown { from{opacity:1;transform:translateY(0) translateX(-50%)} to{opacity:0;transform:translateY(14px) translateX(-50%)} }
+    .toast-enter { animation:slideUp   0.26s ease forwards; }
+    .toast-exit  { animation:slideDown 0.26s ease forwards; }
 
-        /* ── Empty state ──────────────────────────────── */
-        .empty-state {
-            text-align: center;
-            padding: 28px 16px;
-            background: #f8fafc;
-            border-radius: 12px;
-            border: 2px dashed #e2e8f0;
-        }
-        .empty-state p { color: #94a3b8; font-size: 12px; font-weight: 500; }
+    /* ── Modal (edit flow block) ───────────── */
+    .modal-backdrop {
+      position:fixed; inset:0; background:rgba(15,23,42,0.35);
+      display:flex; align-items:center; justify-content:center; z-index:200;
+      backdrop-filter:blur(2px);
+    }
+    .modal {
+      background:#fff; border-radius:14px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.18);
+      padding:24px; width:320px; display:flex; flex-direction:column; gap:14px;
+    }
+    .modal-title { font-size:14px; font-weight:800; color:#1e293b; }
+    .modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
+    .btn-modal-ok {
+      background:#1e40af; color:#fff; border:none; border-radius:8px;
+      font-weight:700; font-size:12px; padding:9px 20px; cursor:pointer;
+      transition:background 0.15s;
+    }
+    .btn-modal-ok:hover { background:#1d4ed8; }
+    .btn-modal-cancel {
+      background:#f1f5f9; color:#475569; border:none; border-radius:8px;
+      font-weight:600; font-size:12px; padding:9px 16px; cursor:pointer;
+    }
 
-        /* ── Canvas ───────────────────────────────────── */
-        .canvas-area {
-            flex: 1;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        .canvas-grid {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-            background-color: #f1f5f9;
-            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-            background-size: 28px 28px;
-        }
-        .canvas-world {
-            position: absolute;
-            width: 4000px;
-            height: 4000px;
-        }
-        .canvas-toolbar {
-            position: absolute;
-            top: 16px; left: 16px;
-            z-index: 20;
-        }
-        .canvas-hint {
-            position: absolute;
-            top: 16px; right: 16px;
-            z-index: 10;
-            background: rgba(255,255,255,0.88);
-            backdrop-filter: blur(4px);
-            color: #94a3b8;
-            font-size: 10px;
-            font-weight: 600;
-            padding: 6px 14px;
-            border-radius: 20px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        }
-
-        /* ── Cards ────────────────────────────────────── */
-        .org-card {
-            position: absolute;
-            width: 220px;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px -4px rgba(0,0,0,0.15), 0 2px 8px -2px rgba(0,0,0,0.10);
-            cursor: grab;
-            touch-action: none;
-            transition: box-shadow 0.15s;
-            z-index: 10;
-        }
-        .org-card:active { cursor: grabbing; }
-        .org-card.selected {
-            outline: 3px solid #3b82f6;
-            outline-offset: 3px;
-            z-index: 50;
-            box-shadow: 0 12px 32px -4px rgba(59,130,246,0.3), 0 4px 12px rgba(0,0,0,0.20);
-        }
-        .card-inner { 
-            padding: 14px 14px;
-            display: flex;
-            flex-direction: column;
-            align-items: center; /* Centraliza tudo */
-            text-align: center;
-        }
-        .card-title {
-            font-size: 9px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 6px;
-        }
-        .card-person {
-            font-size: 14px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-        .card-tags {
-            margin-top: 10px;
-            padding-top: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            justify-content: center;
-            width: 100%;
-        }
-        .tag {
-            font-size: 9px;
-            font-weight: 800;
-            text-transform: uppercase;
-            padding: 4px 8px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            transition: transform 0.1s, opacity 0.15s;
-        }
-        .tag:hover {
-            transform: scale(1.05);
-            opacity: 0.9;
-        }
-
-        /* ── Toast ────────────────────────────────────── */
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            z-index: 9999;
-            background: #1e293b;
-            color: #fff;
-            font-size: 12px;
-            font-weight: 700;
-            padding: 10px 20px;
-            border-radius: 20px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-            pointer-events: none;
-        }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(16px) translateX(-50%); }
-            to   { opacity: 1; transform: translateY(0)    translateX(-50%); }
-        }
-        @keyframes slideDown {
-            from { opacity: 1; transform: translateY(0)    translateX(-50%); }
-            to   { opacity: 0; transform: translateY(16px) translateX(-50%); }
-        }
-        .toast-enter { animation: slideUp   0.28s ease forwards; }
-        .toast-exit  { animation: slideDown 0.28s ease forwards; }
-
-        /* ── Print ────────────────────────────────────── */
-        @media print {
-            .no-print { display: none !important; }
-            .canvas-grid { background: white !important; }
-            body { background: white !important; }
-            .org-card { box-shadow: none !important; border: 1px solid #ccc !important; }
-        }
-    </style>
+    /* ── Print ─────────────────────────────── */
+    @media print {
+      .no-print { display:none !important; }
+      .canvas-grid { background:white !important; }
+      body { background:white !important; }
+      .org-card { box-shadow:none !important; }
+    }
+  </style>
 </head>
 <body>
 <div id="root"></div>
-
 <script type="text/babel">
-const { useState, useEffect, useRef, useCallback } = React;
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-const CARD_W = 220;
-const CARD_H = 95;
+/* ════════════════════════════════════════════════════════
+   CONSTANTS
+════════════════════════════════════════════════════════ */
+const ORG_CARD_W = 210, ORG_CARD_H = 80;
 
-const PALETTE = [
-    '#1e40af','#0369a1','#065f46','#7c3aed',
-    '#be185d','#b45309','#dc2626','#475569',
-    '#fcd34d','#94a3b8', '#0ea5e9', '#10b981'
-];
+const PALETTE = ['#1e40af','#0369a1','#065f46','#7c3aed','#be185d','#b45309','#dc2626','#475569','#0e7490','#15803d'];
 
-const DEFAULT_DATA = [
-    {
-        id: '1', title: 'Gerente Geral', person: 'Nome do Gestor',
-        x: 400, y: 80, color: '#1e40af', parentId: null,
-        activities: ['Gestão de Equipe', 'Supervisão de Metas'], flow: ['Conferência de Relatórios']
-    }
-];
+const DEFAULT_ROLES = [{
+  id:'1', title:'Gerente Geral', person:'Nome do Gestor',
+  x:400, y:80, color:'#1e40af', parentId:null,
+  activities:['Gestão de Equipe'], flow:['Conferência']
+}];
 
-/* ── Funções Auxiliares (Cores Inteligentes) ──────────────── */
-// Retorna a cor primária de contraste (Branco ou Preto/Escuro)
-function getContrastColor(hex) {
-    if (!hex) return '#1e293b';
-    hex = hex.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-    return (yiq >= 140) ? '#0f172a' : '#ffffff'; 
+/* Block types */
+const BLOCK_TYPES = {
+  start:     { label:'Início / Fim',       color:'#1e40af', textColor:'#fff', shape:'oval' },
+  action:    { label:'Ação / Tarefa',      color:'#fff',    textColor:'#1e293b', shape:'rect' },
+  decision:  { label:'Decisão (Sim/Não)',  color:'#fef9c3', textColor:'#92400e', shape:'diamond' },
+  document:  { label:'Documento',          color:'#f0fdf4', textColor:'#14532d', shape:'document' },
+  subprocess:{ label:'Subprocesso',        color:'#eff6ff', textColor:'#1e40af', shape:'subprocess' },
+};
+
+const BLOCK_W = 160, BLOCK_H = 60;
+const DIAMOND_W = 140, DIAMOND_H = 80;
+
+/* ════════════════════════════════════════════════════════
+   UTILS
+════════════════════════════════════════════════════════ */
+function uid() { return Math.random().toString(36).slice(2,9); }
+
+function blockCenter(b) {
+  const w = b.type === 'decision' ? DIAMOND_W : BLOCK_W;
+  const h = b.type === 'decision' ? DIAMOND_H : BLOCK_H;
+  return { x: b.x + w/2, y: b.y + h/2 };
 }
 
-// Retorna uma cor secundária suave de contraste
-function getSubContrastColor(hex) {
-    if (!hex) return '#475569';
-    hex = hex.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-    return (yiq >= 140) ? '#475569' : '#cbd5e1'; 
+function portPos(b, side) {
+  const w = b.type==='decision' ? DIAMOND_W : BLOCK_W;
+  const h = b.type==='decision' ? DIAMOND_H : BLOCK_H;
+  const cx = b.x + w/2, cy = b.y + h/2;
+  if (side==='top')    return {x:cx, y:b.y};
+  if (side==='bottom') return {x:cx, y:b.y+h};
+  if (side==='left')   return {x:b.x, y:cy};
+  if (side==='right')  return {x:b.x+w, y:cy};
+  return {x:cx,y:cy};
 }
 
-/* ── Toast ─────────────────────────────────────── */
+/* mid-point of bezier for label placement */
+function bezierMid(x1,y1,x2,y2) {
+  return { x:(x1+x2)/2, y:(y1+y2)/2 };
+}
+
+/* ════════════════════════════════════════════════════════
+   TOAST
+════════════════════════════════════════════════════════ */
 function Toast({ message, onDone }) {
-    const [exiting, setExiting] = useState(false);
-    useEffect(() => {
-        const t1 = setTimeout(() => setExiting(true), 1800);
-        const t2 = setTimeout(onDone, 2200);
-        return () => { clearTimeout(t1); clearTimeout(t2); };
-    }, []);
-    return <div className={`toast ${exiting ? 'toast-exit' : 'toast-enter'}`}>{message}</div>;
+  const [ex, setEx] = useState(false);
+  useEffect(() => {
+    const t1 = setTimeout(()=>setEx(true),1800);
+    const t2 = setTimeout(onDone,2200);
+    return ()=>{clearTimeout(t1);clearTimeout(t2);};
+  },[]);
+  return <div className={`toast ${ex?'toast-exit':'toast-enter'}`}>{message}</div>;
 }
 
-/* ── App ───────────────────────────────────────── */
-const App = () => {
-    const [roles, setRoles] = useState(() => {
-        try { const s = localStorage.getItem('org_data_v4'); return s ? JSON.parse(s) : DEFAULT_DATA; }
-        catch { return DEFAULT_DATA; }
-    });
-    const [history,     setHistory]     = useState([]);
-    const [selectedId,  setSelectedId]  = useState(null);
-    const [showDetails, setShowDetails] = useState(true);
-    const [toast,       setToast]       = useState(null);
-    const [scale,       setScale]       = useState(1);
-    const [pan,         setPan]         = useState({ x: 0, y: 0 });
-    const [modalRole,   setModalRole]   = useState(null); // Estado para o modal de atividades
+/* ════════════════════════════════════════════════════════
+   BLOCK SHAPES (SVG)
+════════════════════════════════════════════════════════ */
+function BlockShape({ type, label, color, textColor, selected, w, h }) {
+  const stroke = selected ? '#3b82f6' : '#cbd5e1';
+  const sw = selected ? 2.5 : 1.5;
+  const fontSize = 11;
+  const maxChars = Math.floor(w / 6.5);
+  const display = label.length > maxChars ? label.slice(0,maxChars-1)+'…' : label;
 
-    const dragging  = useRef(null);
-    const panning   = useRef(null);
-    const canvasRef = useRef(null);
-
-    useEffect(() => { localStorage.setItem('org_data_v4', JSON.stringify(roles)); }, [roles]);
-
-    const showToast  = (msg) => setToast(msg);
-    const pushHistory = (prev) => setHistory(h => [...h.slice(-29), prev]);
-
-    /* undo */
-    const undo = useCallback(() => {
-        if (!history.length) return;
-        setRoles(history[history.length - 1]);
-        setHistory(h => h.slice(0, -1));
-        showToast('↩️ Desfeito');
-    }, [history]);
-    useEffect(() => {
-        const fn = e => { if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); } };
-        window.addEventListener('keydown', fn);
-        return () => window.removeEventListener('keydown', fn);
-    }, [undo]);
-
-    /* drag card */
-    const startDrag = (clientX, clientY, id) => {
-        const role = roles.find(r => r.id === id);
-        setSelectedId(id);
-        dragging.current = { id, startX: clientX, startY: clientY, origX: role.x, origY: role.y };
-    };
-    const handleMouseDown  = (e, id) => { if (e.target.closest('.no-drag')) return; e.stopPropagation(); startDrag(e.clientX, e.clientY, id); };
-    const handleTouchStart = (e, id) => { if (e.target.closest('.no-drag')) return; e.stopPropagation(); startDrag(e.touches[0].clientX, e.touches[0].clientY, id); };
-
-    /* pan */
-    const handleCanvasMouseDown = (e) => {
-        if (e.button === 1 || e.button === 2) { e.preventDefault(); panning.current = { startX: e.clientX - pan.x, startY: e.clientY - pan.y }; }
-        if (e.button === 0 && e.target === canvasRef.current) setSelectedId(null);
-    };
-
-    /* move */
-    const moveCard = (clientX, clientY) => {
-        if (!dragging.current) return;
-        const d = dragging.current;
-        setRoles(prev => prev.map(r =>
-            r.id === d.id ? { ...r, x: d.origX + (clientX - d.startX) / scale, y: d.origY + (clientY - d.startY) / scale } : r
-        ));
-    };
-    const handleMouseMove  = (e) => { moveCard(e.clientX, e.clientY); if (panning.current) setPan({ x: e.clientX - panning.current.startX, y: e.clientY - panning.current.startY }); };
-    const handleTouchMove  = (e) => { moveCard(e.touches[0].clientX, e.touches[0].clientY); };
-    const handleMouseUp    = () => {
-        if (dragging.current) {
-            const d = dragging.current;
-            const r = roles.find(r => r.id === d.id);
-            if (r && (Math.abs(r.x - d.origX) > 2 || Math.abs(r.y - d.origY) > 2))
-                pushHistory(roles.map(r => r.id === d.id ? { ...r, x: d.origX, y: d.origY } : r));
-        }
-        dragging.current = null; panning.current = null;
-    };
-
-    /* zoom */
-    const handleWheel = (e) => { e.preventDefault(); setScale(s => Math.min(2.5, Math.max(0.25, s * (e.deltaY > 0 ? 0.9 : 1.1)))); };
-    useEffect(() => {
-        const el = canvasRef.current;
-        if (!el) return;
-        el.addEventListener('wheel', handleWheel, { passive: false });
-        return () => el.removeEventListener('wheel', handleWheel);
-    }, []);
-
-    /* CRUD */
-    const addRole = () => {
-        pushHistory(roles);
-        const id = Date.now().toString();
-        setRoles(prev => [...prev, {
-            id, title: 'Nova Função', person: 'Nome',
-            x: 200 + Math.random() * 300, y: 180 + Math.random() * 120,
-            color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
-            parentId: selectedId || null, activities: [], flow: []
-        }]);
-        setSelectedId(id);
-        showToast('✅ Cargo adicionado');
-    };
-
-    const updateSelected = (field, value) =>
-        setRoles(prev => prev.map(r => r.id === selectedId ? { ...r, [field]: value } : r));
-
-    const deleteRole = (id) => {
-        if (!confirm('Deseja realmente excluir este cargo?')) return;
-        pushHistory(roles);
-        setRoles(prev => prev.filter(r => r.id !== id).map(r => r.parentId === id ? { ...r, parentId: null } : r));
-        setSelectedId(null);
-        showToast('🗑️ Cargo removido');
-    };
-
-    /* arquivo */
-    const exportJson = () => {
-        const a = Object.assign(document.createElement('a'), {
-            href: URL.createObjectURL(new Blob([JSON.stringify(roles, null, 2)], { type: 'application/json' })),
-            download: 'organograma.json'
-        });
-        a.click();
-        showToast('💾 Arquivo salvo');
-    };
-
-    const importJson = (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onload = ev => {
-            try {
-                const json = JSON.parse(ev.target.result);
-                if (!Array.isArray(json)) throw new Error('Formato inválido');
-                json.forEach(r => { if (!r.id || !r.title) throw new Error('Campo ausente'); });
-                pushHistory(roles); setRoles(json); showToast('📂 Modelo carregado');
-            } catch (err) { alert('Erro: ' + err.message); }
-        };
-        reader.readAsText(file); e.target.value = '';
-    };
-
-    const clearCanvas = () => {
-        if (!confirm('Isso apagará todo o quadro. Deseja continuar?')) return;
-        pushHistory(roles); setRoles(DEFAULT_DATA); setSelectedId(null); showToast('🆕 Novo quadro criado');
-    };
-
-    const exportPng = async () => {
-        showToast('📸 Gerando imagem...');
-        try {
-            const canvas = await html2canvas(canvasRef.current, { backgroundColor: '#f1f5f9', scale: 2, useCORS: true });
-            const a = Object.assign(document.createElement('a'), { href: canvas.toDataURL('image/png'), download: 'organograma.png' });
-            a.click(); showToast('✅ Imagem exportada!');
-        } catch { alert('Erro ao exportar.'); }
-    };
-
-    const sel = roles.find(r => r.id === selectedId);
-
+  if (type === 'decision') {
+    const hw=w/2, hh=h/2;
+    const pts=`${hw},0 ${w},${hh} ${hw},${h} 0,${hh}`;
     return (
-        <div className="app"
-            onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}
-            onTouchMove={handleTouchMove} onTouchEnd={handleMouseUp}
-        >
-            {/* ══ SIDEBAR ════════════════════════════════ */}
-            <aside className="sidebar no-print">
-                <div className="sidebar-header">
-                    <span className="logo"><span className="logo-badge">GO</span> GESTÃO</span>
-                    <button className="btn-clear" onClick={clearCanvas} title="Novo Quadro">🗑️</button>
-                </div>
-
-                <div className="sidebar-body">
-                    {history.length > 0 && (
-                        <button className="btn-undo" onClick={undo}>
-                            ↩️ Desfazer &nbsp;<span className="mono" style={{color:'#94a3b8',fontSize:10}}>Ctrl+Z</span>
-                        </button>
-                    )}
-
-                    <button className="btn-primary" onClick={addRole}>
-                        <span style={{fontSize:16,lineHeight:1}}>+</span> Novo Cargo
-                    </button>
-
-                    {sel ? (
-                        <div className="field-group">
-                            <div className="config-header">
-                                <span className="config-title">Configurar Cargo</span>
-                                <button className="config-close" onClick={() => setSelectedId(null)}>Fechar</button>
-                            </div>
-
-                            <div className="field-section">
-                                <label className="field-label">Cargo / Responsável</label>
-                                <input className="input-text" type="text" value={sel.title}
-                                    onChange={e => updateSelected('title', e.target.value)} placeholder="Nome do cargo" />
-                                <input className="input-text" type="text" value={sel.person}
-                                    onChange={e => updateSelected('person', e.target.value)} placeholder="Responsável" />
-                            </div>
-
-                            <div className="field-section">
-                                <label className="field-label">Superior Hierárquico</label>
-                                <select className="input-select" value={sel.parentId || ''}
-                                    onChange={e => updateSelected('parentId', e.target.value || null)}>
-                                    <option value="">Sem Superior</option>
-                                    {roles.filter(r => r.id !== selectedId).map(r =>
-                                        <option key={r.id} value={r.id}>{r.title} — {r.person}</option>
-                                    )}
-                                </select>
-                            </div>
-
-                            <div className="field-section">
-                                <label className="field-label">Cor de Fundo do Card</label>
-                                <div className="palette">
-                                    {PALETTE.map(c => (
-                                        <button key={c} className={`palette-dot${sel.color === c ? ' active' : ''}`}
-                                            style={{background: c}} onClick={() => updateSelected('color', c)} />
-                                    ))}
-                                    <input type="color" className="palette-color-input" value={sel.color}
-                                        onChange={e => updateSelected('color', e.target.value)} title="Personalizada" />
-                                </div>
-                            </div>
-
-                            <div className="field-section">
-                                <label className="field-label">📌 Atividades</label>
-                                <textarea className="input-textarea no-drag"
-                                    value={sel.activities?.join('\n') || ''}
-                                    onChange={e => updateSelected('activities', e.target.value.split('\n'))}
-                                    placeholder="Uma atividade por linha..." />
-                            </div>
-
-                            <div className="field-section">
-                                <label className="field-label">🔄 Fluxograma</label>
-                                <textarea className="input-textarea no-drag"
-                                    value={sel.flow?.join('\n') || ''}
-                                    onChange={e => updateSelected('flow', e.target.value.split('\n'))}
-                                    placeholder="Etapas do fluxo..." />
-                            </div>
-
-                            <button className="btn-delete" onClick={() => deleteRole(selectedId)}>Excluir Cargo</button>
-                        </div>
-                    ) : (
-                        <div className="empty-state"><p>Clique em um card para editar</p></div>
-                    )}
-
-                    <hr className="section-divider" />
-
-                    <div className="zoom-section">
-                        <span className="zoom-label">🔍 Zoom — {Math.round(scale * 100)}%</span>
-                        <input type="range" min="25" max="250" value={Math.round(scale * 100)}
-                            onChange={e => setScale(e.target.value / 100)} />
-                        <button className="btn-secondary" style={{width:'100%'}}
-                            onClick={() => { setScale(1); setPan({x:0,y:0}); }}>Resetar Zoom</button>
-                    </div>
-                </div>
-
-                <div className="sidebar-footer">
-                    <div className="footer-row">
-                        <button className="btn-secondary" onClick={exportJson}>💾 Salvar JSON</button>
-                        <label className="btn-secondary" style={{cursor:'pointer'}}>
-                            📂 Abrir JSON
-                            <input type="file" accept=".json" onChange={importJson} style={{display:'none'}} />
-                        </label>
-                    </div>
-                    <div className="footer-row">
-                        <button className="btn-secondary" onClick={exportPng}>📸 Exportar PNG</button>
-                        <button className="btn-secondary" onClick={() => window.print()}>🖨️ Imprimir</button>
-                    </div>
-                </div>
-            </aside>
-
-            {/* ══ CANVAS ════════════════════════════════ */}
-            <div className="canvas-area">
-                <div className="canvas-toolbar no-print">
-                    <button className={`btn-details ${showDetails ? 'on' : 'off'}`}
-                        onClick={() => setShowDetails(v => !v)}>
-                        {showDetails ? '👁️ Detalhes On' : '👁️ Detalhes Off'}
-                    </button>
-                </div>
-                <div className="canvas-hint no-print">Scroll = zoom · Btn direito = mover</div>
-
-                <div ref={canvasRef} className="canvas-grid"
-                    onMouseDown={handleCanvasMouseDown}
-                    onContextMenu={e => e.preventDefault()}
-                    style={{cursor: panning.current ? 'grabbing' : 'default'}}
-                >
-                    <div className="canvas-world"
-                        style={{transform:`translate(${pan.x}px,${pan.y}px) scale(${scale})`, transformOrigin:'0 0'}}
-                    >
-                        {/* SVG connections */}
-                        <svg style={{position:'absolute',inset:0,width:'100%',height:'100%',overflow:'visible',pointerEvents:'none'}}>
-                            <defs>
-                                <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-                                    <polygon points="0 0,8 3,0 6" fill="#94a3b8" />
-                                </marker>
-                            </defs>
-                            {roles.map(role => {
-                                if (!role.parentId) return null;
-                                const p = roles.find(r => r.id === role.parentId);
-                                if (!p) return null;
-                                const sx = p.x + CARD_W/2, sy = p.y + CARD_H;
-                                const ex = role.x + CARD_W/2, ey = role.y;
-                                const my = (sy + ey) / 2;
-                                return (
-                                    <path key={`p-${role.id}`}
-                                        d={`M${sx} ${sy} C${sx} ${my},${ex} ${my},${ex} ${ey}`}
-                                        fill="none" stroke="#cbd5e1" strokeWidth="2" markerEnd="url(#arr)" />
-                                );
-                            })}
-                        </svg>
-
-                        {/* Cards Atualizados */}
-                        {roles.map(role => {
-                            const acts  = role.activities?.filter(a => a.trim()) || [];
-                            const flows = role.flow?.filter(f => f.trim()) || [];
-                            
-                            const textColor = getContrastColor(role.color);
-                            const subTextColor = getSubContrastColor(role.color);
-
-                            return (
-                                <div key={role.id}
-                                    className={`org-card${selectedId === role.id ? ' selected' : ''}`}
-                                    style={{
-                                        left: role.x, 
-                                        top: role.y, 
-                                        backgroundColor: role.color, 
-                                        color: textColor 
-                                    }}
-                                    onMouseDown={e => handleMouseDown(e, role.id)}
-                                    onTouchStart={e => handleTouchStart(e, role.id)}
-                                >
-                                    <div className="card-inner">
-                                        <div className="card-title" style={{ color: subTextColor }}>{role.title}</div>
-                                        <div className="card-person">{role.person}</div>
-                                        
-                                        {showDetails && (acts.length > 0 || flows.length > 0) && (
-                                            <div className="card-tags" style={{ borderTop: `1px solid ${subTextColor}55` }}>
-                                                {acts.length  > 0 && (
-                                                    <button 
-                                                        className="tag no-drag" 
-                                                        style={{ background: 'rgba(0,0,0,0.15)', color: textColor }}
-                                                        onMouseDown={(e) => { e.stopPropagation(); setModalRole(role); }}
-                                                        onTouchStart={(e) => { e.stopPropagation(); setModalRole(role); }}
-                                                    >
-                                                        📌 {acts.length} Ativ.
-                                                    </button>
-                                                )}
-                                                {flows.length > 0 && (
-                                                    <button 
-                                                        className="tag no-drag" 
-                                                        style={{ background: 'rgba(0,0,0,0.15)', color: textColor }}
-                                                        onMouseDown={(e) => { e.stopPropagation(); setModalRole(role); }}
-                                                        onTouchStart={(e) => { e.stopPropagation(); setModalRole(role); }}
-                                                    >
-                                                        🔄 {flows.length} Fluxos
-                                                    </button>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            </div>
-
-            {/* ── MODAL DE ATIVIDADES ─────────────────────────────── */}
-            {modalRole && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 no-print" 
-                     onClick={() => setModalRole(null)}>
-                    <div className="bg-white rounded-2xl shadow-2xl w-[480px] max-w-full max-h-[85vh] flex flex-col overflow-hidden" 
-                         onClick={e => e.stopPropagation()}>
-                        
-                        <div className="p-6 pb-4 border-b border-slate-100" style={{ backgroundColor: modalRole.color, color: getContrastColor(modalRole.color) }}>
-                            <h2 className="text-xl font-bold uppercase tracking-tight">{modalRole.title}</h2>
-                            <p className="text-sm font-medium opacity-90 mt-1">{modalRole.person}</p>
-                        </div>
-
-                        <div className="p-6 overflow-y-auto custom-scroll flex-1 bg-slate-50 space-y-6">
-                            {modalRole.activities?.filter(a => a.trim()).length > 0 && (
-                                <div>
-                                    <h3 className="font-bold text-xs text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <span className="text-lg">📌</span> Atividades do Cargo
-                                    </h3>
-                                    <ul className="space-y-2">
-                                        {modalRole.activities.filter(a => a.trim()).map((act, i) => (
-                                            <li key={i} className="bg-white p-3 rounded-lg border border-slate-200 text-sm text-slate-700 shadow-sm leading-relaxed">
-                                                {act}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-
-                            {modalRole.flow?.filter(f => f.trim()).length > 0 && (
-                                <div>
-                                    <h3 className="font-bold text-xs text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <span className="text-lg">🔄</span> Fluxograma / Passos
-                                    </h3>
-                                    <div className="space-y-3 pl-2">
-                                        {modalRole.flow.filter(f => f.trim()).map((step, i) => (
-                                            <div key={i} className="relative pl-6">
-                                                <div className="absolute left-0 top-1.5 w-3 h-3 rounded-full border-2 border-white shadow-sm z-10" style={{ backgroundColor: modalRole.color }}></div>
-                                                {i !== modalRole.flow.filter(f => f.trim()).length - 1 && (
-                                                    <div className="absolute left-[5px] top-4 bottom-[-16px] w-[2px] bg-slate-200"></div>
-                                                )}
-                                                <div className="text-sm text-slate-700 font-medium leading-relaxed pb-2">
-                                                    {step}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="p-4 border-t border-slate-100 bg-white">
-                            <button onClick={() => setModalRole(null)} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 rounded-xl transition-colors uppercase text-xs tracking-wider">
-                                Fechar Visualização
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {toast && <Toast message={toast} onDone={() => setToast(null)} />}
-        </div>
+      <svg width={w} height={h} style={{overflow:'visible',display:'block'}}>
+        <polygon points={pts} fill={color} stroke={stroke} strokeWidth={sw}/>
+        <text x={hw} y={hh+1} textAnchor="middle" dominantBaseline="middle"
+          fontSize={fontSize} fontWeight="700" fill={textColor} fontFamily="DM Sans,sans-serif">{display}</text>
+      </svg>
     );
+  }
+  if (type === 'start') {
+    const rx = h/2;
+    return (
+      <svg width={w} height={h} style={{overflow:'visible',display:'block'}}>
+        <rect x={0} y={0} width={w} height={h} rx={rx} ry={rx} fill={color} stroke={stroke} strokeWidth={sw}/>
+        <text x={w/2} y={h/2+1} textAnchor="middle" dominantBaseline="middle"
+          fontSize={fontSize} fontWeight="700" fill={textColor} fontFamily="DM Sans,sans-serif">{display}</text>
+      </svg>
+    );
+  }
+  if (type === 'document') {
+    const wave = `M0,${h} Q${w*0.25},${h-10} ${w*0.5},${h} Q${w*0.75},${h+10} ${w},${h}`;
+    return (
+      <svg width={w} height={h+10} style={{overflow:'visible',display:'block'}}>
+        <path d={`M0,0 L${w},0 L${w},${h} Q${w*0.75},${h+10} ${w*0.5},${h} Q${w*0.25},${h-10} 0,${h} Z`}
+          fill={color} stroke={stroke} strokeWidth={sw}/>
+        <text x={w/2} y={h/2+1} textAnchor="middle" dominantBaseline="middle"
+          fontSize={fontSize} fontWeight="700" fill={textColor} fontFamily="DM Sans,sans-serif">{display}</text>
+      </svg>
+    );
+  }
+  if (type === 'subprocess') {
+    return (
+      <svg width={w} height={h} style={{overflow:'visible',display:'block'}}>
+        <rect x={0} y={0} width={w} height={h} rx={4} fill={color} stroke={stroke} strokeWidth={sw}/>
+        <rect x={12} y={0} width={1.5} height={h} fill={stroke} opacity={0.5}/>
+        <rect x={w-13.5} y={0} width={1.5} height={h} fill={stroke} opacity={0.5}/>
+        <text x={w/2} y={h/2+1} textAnchor="middle" dominantBaseline="middle"
+          fontSize={fontSize} fontWeight="700" fill={textColor} fontFamily="DM Sans,sans-serif">{display}</text>
+      </svg>
+    );
+  }
+  /* default: action rect */
+  return (
+    <svg width={w} height={h} style={{overflow:'visible',display:'block'}}>
+      <rect x={0} y={0} width={w} height={h} rx={6} fill={color} stroke={stroke} strokeWidth={sw}/>
+      <text x={w/2} y={h/2+1} textAnchor="middle" dominantBaseline="middle"
+        fontSize={fontSize} fontWeight="700" fill={textColor} fontFamily="DM Sans,sans-serif">{display}</text>
+    </svg>
+  );
+}
+
+function blockShapeIcon(type) {
+  const s=20,h=14;
+  if (type==='start')      return <svg width={s} height={h}><rect x={0} y={0} width={s} height={h} rx={7} fill="#1e40af"/></svg>;
+  if (type==='action')     return <svg width={s} height={h}><rect x={0} y={0} width={s} height={h} rx={3} fill="#fff" stroke="#cbd5e1" strokeWidth={1.5}/></svg>;
+  if (type==='decision')   return <svg width={s} height={s}><polygon points={`${s/2},0 ${s},${s/2} ${s/2},${s} 0,${s/2}`} fill="#fef9c3" stroke="#d97706" strokeWidth={1.5}/></svg>;
+  if (type==='document')   return <svg width={s} height={h+4}><path d={`M0,0 L${s},0 L${s},${h} Q${s*.75},${h+4} ${s*.5},${h} Q${s*.25},${h-4} 0,${h} Z`} fill="#f0fdf4" stroke="#16a34a" strokeWidth={1.5}/></svg>;
+  if (type==='subprocess') return <svg width={s} height={h}><rect x={0} y={0} width={s} height={h} rx={3} fill="#eff6ff" stroke="#3b82f6" strokeWidth={1.5}/><rect x={4} y={0} width={1} height={h} fill="#93c5fd"/><rect x={s-5} y={0} width={1} height={h} fill="#93c5fd"/></svg>;
+  return null;
+}
+
+/* ════════════════════════════════════════════════════════
+   PORTS OVERLAY
+════════════════════════════════════════════════════════ */
+function Ports({ block, onPortMouseDown }) {
+  const w = block.type==='decision' ? DIAMOND_W : BLOCK_W;
+  const h = block.type==='decision' ? DIAMOND_H : BLOCK_H;
+  const sides = ['top','bottom','left','right'];
+  return (
+    <>
+      {sides.map(side => {
+        const p = portPos(block, side);
+        return (
+          <div key={side} className="port"
+            style={{ left: p.x - 5.5, top: p.y - 5.5 }}
+            onMouseDown={e => { e.stopPropagation(); onPortMouseDown(e, block.id, side); }}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   EDIT BLOCK MODAL
+════════════════════════════════════════════════════════ */
+function EditBlockModal({ block, onSave, onClose }) {
+  const [label, setLabel] = useState(block.label);
+  return (
+    <div className="modal-backdrop" onMouseDown={onClose}>
+      <div className="modal" onMouseDown={e=>e.stopPropagation()}>
+        <div className="modal-title">Editar Bloco</div>
+        <div className="field-section">
+          <label className="field-label">Texto do bloco</label>
+          <input className="input-text" autoFocus value={label}
+            onChange={e=>setLabel(e.target.value)}
+            onKeyDown={e=>{ if(e.key==='Enter') onSave(label); }}/>
+        </div>
+        <div className="modal-footer">
+          <button className="btn-modal-cancel" onClick={onClose}>Cancelar</button>
+          <button className="btn-modal-ok" onClick={()=>onSave(label)}>Salvar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   FLUXOGRAMA CANVAS
+════════════════════════════════════════════════════════ */
+function FluxCanvas({ roleId, roleColor }) {
+  const storageKey = `flux_v1_${roleId}`;
+
+  const [blocks,  setBlocks]  = useState(() => { try { const s=localStorage.getItem(storageKey); return s?JSON.parse(s).blocks:[];   } catch{return[];} });
+  const [conns,   setConns]   = useState(() => { try { const s=localStorage.getItem(storageKey); return s?JSON.parse(s).conns:[];    } catch{return[];} });
+  const [selId,   setSelId]   = useState(null);
+  const [scale,   setScale]   = useState(1);
+  const [pan,     setPan]     = useState({x:0,y:0});
+  const [editingBlock, setEditingBlock] = useState(null);
+  /* connection drawing state */
+  const [drawConn, setDrawConn] = useState(null); // {fromId, fromSide, mx, my}
+  const [toast,   setToast]   = useState(null);
+
+  const dragging = useRef(null);
+  const panning  = useRef(null);
+  const canvasRef= useRef(null);
+
+  /* persist */
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify({blocks,conns}));
+  }, [blocks, conns, storageKey]);
+
+  const showToast = t => setToast(t);
+
+  /* add block */
+  const addBlock = (type) => {
+    const id = uid();
+    const cfg = BLOCK_TYPES[type];
+    const w = type==='decision'?DIAMOND_W:BLOCK_W;
+    const h = type==='decision'?DIAMOND_H:BLOCK_H;
+    setBlocks(prev=>[...prev, {
+      id, type, label: cfg.label,
+      x: 80 + Math.random()*300, y: 80 + Math.random()*200,
+    }]);
+    setSelId(id);
+    showToast('✅ Bloco adicionado');
+  };
+
+  const deleteSelected = () => {
+    if (!selId) return;
+    setBlocks(prev=>prev.filter(b=>b.id!==selId));
+    setConns(prev=>prev.filter(c=>c.from!==selId && c.to!==selId));
+    setSelId(null);
+    showToast('🗑️ Bloco removido');
+  };
+
+  const clearAll = () => {
+    if (!confirm('Apagar todo o fluxograma deste cargo?')) return;
+    setBlocks([]); setConns([]); setSelId(null);
+    showToast('🆕 Fluxograma limpo');
+  };
+
+  /* drag block */
+  const handleBlockMouseDown = (e, id) => {
+    e.stopPropagation();
+    if (drawConn) return; // don't drag while connecting
+    const b = blocks.find(b=>b.id===id);
+    setSelId(id);
+    dragging.current = { id, startX:e.clientX, startY:e.clientY, origX:b.x, origY:b.y };
+  };
+
+  /* port drag start → begin connection */
+  const handlePortMouseDown = (e, fromId, fromSide) => {
+    e.stopPropagation();
+    setDrawConn({ fromId, fromSide, mx: e.clientX, my: e.clientY });
+  };
+
+  /* canvas mouse down → pan */
+  const handleCanvasMouseDown = (e) => {
+    if (e.button===1||e.button===2) { e.preventDefault(); panning.current={startX:e.clientX-pan.x,startY:e.clientY-pan.y}; }
+    if (e.button===0 && e.target===canvasRef.current) setSelId(null);
+  };
+
+  /* canvas mouse move */
+  const handleMouseMove = (e) => {
+    if (dragging.current) {
+      const d=dragging.current;
+      setBlocks(prev=>prev.map(b=>b.id===d.id?{...b,x:d.origX+(e.clientX-d.startX)/scale,y:d.origY+(e.clientY-d.startY)/scale}:b));
+    }
+    if (panning.current) setPan({x:e.clientX-panning.current.startX,y:e.clientY-panning.current.startY});
+    if (drawConn) setDrawConn(dc=>({...dc,mx:e.clientX,my:e.clientY}));
+  };
+
+  /* canvas mouse up → finish connection or stop drag */
+  const handleMouseUp = (e) => {
+    dragging.current = null;
+    panning.current  = null;
+    if (drawConn) setDrawConn(null);
+  };
+
+  /* drop on a port to finish connection */
+  const handlePortMouseUp = (e, toId, toSide) => {
+    e.stopPropagation();
+    if (!drawConn || drawConn.fromId===toId) { setDrawConn(null); return; }
+    // avoid duplicate
+    const exists = conns.find(c=>c.from===drawConn.fromId&&c.to===toId&&c.fromSide===drawConn.fromSide&&c.toSide===toSide);
+    if (exists) { setDrawConn(null); return; }
+
+    const fromBlock = blocks.find(b=>b.id===drawConn.fromId);
+    let label = '';
+    if (fromBlock?.type==='decision') {
+      // assign Sim to first outgoing, Não to second
+      const existing = conns.filter(c=>c.from===drawConn.fromId);
+      label = existing.length===0 ? 'Sim' : 'Não';
+    }
+
+    setConns(prev=>[...prev,{ id:uid(), from:drawConn.fromId, to:toId, fromSide:drawConn.fromSide, toSide, label }]);
+    setDrawConn(null);
+    showToast('🔗 Conexão criada');
+  };
+
+  /* double click → edit label */
+  const handleBlockDblClick = (e, id) => {
+    e.stopPropagation();
+    const b = blocks.find(b=>b.id===id);
+    setEditingBlock(b);
+  };
+
+  /* zoom */
+  const handleWheel = e => { e.preventDefault(); setScale(s=>Math.min(2.5,Math.max(0.2,s*(e.deltaY>0?0.9:1.1)))); };
+  useEffect(()=>{
+    const el=canvasRef.current; if(!el) return;
+    el.addEventListener('wheel',handleWheel,{passive:false});
+    return ()=>el.removeEventListener('wheel',handleWheel);
+  },[]);
+
+  /* delete connection on click */
+  const deleteConn = (id) => {
+    setConns(prev=>prev.filter(c=>c.id!==id));
+    showToast('🗑️ Conexão removida');
+  };
+
+  /* export PNG */
+  const exportPng = async () => {
+    showToast('📸 Gerando imagem...');
+    try {
+      const canvas = await html2canvas(canvasRef.current,{backgroundColor:'#f1f5f9',scale:2,useCORS:true});
+      const a = Object.assign(document.createElement('a'),{href:canvas.toDataURL('image/png'),download:`fluxo.png`});
+      a.click(); showToast('✅ Exportado!');
+    } catch { alert('Erro ao exportar.'); }
+  };
+
+  /* preview line coords (in world space) */
+  const previewLine = useMemo(()=>{
+    if (!drawConn) return null;
+    const fromBlock = blocks.find(b=>b.id===drawConn.fromId);
+    if (!fromBlock) return null;
+    const fp = portPos(fromBlock, drawConn.fromSide);
+    // convert mouse to world space
+    const rect = canvasRef.current ? canvasRef.current.getBoundingClientRect() : {left:0,top:0};
+    const mx = (drawConn.mx - rect.left - pan.x) / scale;
+    const my = (drawConn.my - rect.top  - pan.y) / scale;
+    return { x1:fp.x, y1:fp.y, x2:mx, y2:my };
+  }, [drawConn, blocks, pan, scale]);
+
+  const selBlock = blocks.find(b=>b.id===selId);
+
+  return (
+    <div className="workspace" style={{flex:1,overflow:'hidden'}}>
+      {/* ── Flux Sidebar ── */}
+      <aside className="sidebar no-print">
+        <div className="sidebar-body">
+          <div className="field-section">
+            <label className="field-label">Adicionar Bloco</label>
+            <div className="block-palette">
+              {Object.entries(BLOCK_TYPES).map(([type,cfg])=>(
+                <button key={type} className="block-tile" onClick={()=>addBlock(type)}>
+                  {blockShapeIcon(type)}
+                  <span>{cfg.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {selBlock && (
+            <>
+              <hr className="section-divider"/>
+              <div className="field-section">
+                <label className="field-label">Bloco Selecionado</label>
+                <div style={{fontSize:12,color:'#475569',background:'#f8fafc',padding:'7px 10px',borderRadius:7,border:'1px solid #e2e8f0'}}>
+                  <strong>{BLOCK_TYPES[selBlock.type]?.label}</strong><br/>
+                  <span style={{color:'#94a3b8'}}>{selBlock.label}</span>
+                </div>
+                <button className="btn-secondary" style={{width:'100%',marginTop:2}} onClick={()=>setEditingBlock(selBlock)}>
+                  ✏️ Editar texto
+                </button>
+                <button className="btn-delete" onClick={deleteSelected}>Excluir Bloco</button>
+              </div>
+            </>
+          )}
+
+          <hr className="section-divider"/>
+          <div className="zoom-section">
+            <span className="zoom-label">🔍 Zoom — {Math.round(scale*100)}%</span>
+            <input type="range" min="20" max="250" value={Math.round(scale*100)} onChange={e=>setScale(e.target.value/100)}/>
+            <button className="btn-secondary" style={{width:'100%'}} onClick={()=>{setScale(1);setPan({x:0,y:0});}}>Resetar Zoom</button>
+          </div>
+
+          <hr className="section-divider"/>
+          <div style={{fontSize:11,color:'#94a3b8',lineHeight:1.6,padding:'6px 0'}}>
+            <strong style={{color:'#64748b'}}>Como usar:</strong><br/>
+            • Clique em um bloco para selecionar<br/>
+            • Arraste os <strong>pontos</strong> para conectar<br/>
+            • Duplo clique para editar texto<br/>
+            • Clique em uma seta para excluir<br/>
+            • Btn direito para mover canvas
+          </div>
+        </div>
+        <div className="sidebar-footer">
+          <div className="footer-row">
+            <button className="btn-secondary" onClick={exportPng}>📸 Exportar PNG</button>
+            <button className="btn-secondary" onClick={clearAll}>🗑️ Limpar</button>
+          </div>
+        </div>
+      </aside>
+
+      {/* ── Flux Canvas ── */}
+      <div className="canvas-area">
+        <div className="canvas-hint no-print">Scroll = zoom · Btn direito = mover · Arraste os pontos para conectar</div>
+        <div ref={canvasRef} className="canvas-grid"
+          onMouseDown={handleCanvasMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onContextMenu={e=>e.preventDefault()}
+          style={{cursor:panning.current?'grabbing':'default'}}
+        >
+          <div className="canvas-world"
+            style={{transform:`translate(${pan.x}px,${pan.y}px) scale(${scale})`,transformOrigin:'0 0'}}
+          >
+            {/* SVG layer: connections + preview */}
+            <svg style={{position:'absolute',inset:0,width:'100%',height:'100%',overflow:'visible',zIndex:5}}>
+              <defs>
+                <marker id="farr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0,8 3,0 6" fill="#94a3b8"/>
+                </marker>
+                <marker id="farr-sim" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0,8 3,0 6" fill="#16a34a"/>
+                </marker>
+                <marker id="farr-nao" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0,8 3,0 6" fill="#dc2626"/>
+                </marker>
+              </defs>
+
+              {/* drawn connections */}
+              {conns.map(c=>{
+                const fb=blocks.find(b=>b.id===c.from);
+                const tb=blocks.find(b=>b.id===c.to);
+                if (!fb||!tb) return null;
+                const sp=portPos(fb,c.fromSide);
+                const ep=portPos(tb,c.toSide);
+                const mx=(sp.x+ep.x)/2, my=(sp.y+ep.y)/2;
+                const isDecision = c.label==='Sim'||c.label==='Não';
+                const stroke = c.label==='Sim'?'#16a34a':c.label==='Não'?'#dc2626':'#94a3b8';
+                const markerId = c.label==='Sim'?'farr-sim':c.label==='Não'?'farr-nao':'farr';
+                return (
+                  <g key={c.id}>
+                    <path
+                      d={`M${sp.x} ${sp.y} C${sp.x} ${my},${ep.x} ${my},${ep.x} ${ep.y}`}
+                      fill="none" stroke={stroke} strokeWidth={2} markerEnd={`url(#${markerId})`}
+                    />
+                    {/* invisible wider hit area */}
+                    <path
+                      d={`M${sp.x} ${sp.y} C${sp.x} ${my},${ep.x} ${my},${ep.x} ${ep.y}`}
+                      fill="none" stroke="transparent" strokeWidth={12}
+                      style={{cursor:'pointer'}} onClick={()=>deleteConn(c.id)}
+                    />
+                    {c.label && (
+                      <foreignObject x={mx-16} y={my-11} width={36} height={20} style={{overflow:'visible',pointerEvents:'none'}}>
+                        <div className={`conn-label ${c.label==='Sim'?'sim':'nao'}`}>{c.label}</div>
+                      </foreignObject>
+                    )}
+                  </g>
+                );
+              })}
+
+              {/* connection preview */}
+              {previewLine && (
+                <line className="conn-preview"
+                  x1={previewLine.x1} y1={previewLine.y1}
+                  x2={previewLine.x2} y2={previewLine.y2}
+                  stroke="#3b82f6" strokeWidth={2} strokeDasharray="6 4"
+                  markerEnd="url(#farr)"
+                />
+              )}
+            </svg>
+
+            {/* blocks */}
+            {blocks.map(b=>{
+              const cfg = BLOCK_TYPES[b.type];
+              const bw = b.type==='decision'?DIAMOND_W:BLOCK_W;
+              const bh = b.type==='decision'?DIAMOND_H:BLOCK_H;
+              const isSel = selId===b.id;
+              return (
+                <div key={b.id}
+                  className={`flow-block${isSel?' selected':''}`}
+                  style={{left:b.x, top:b.y}}
+                  onMouseDown={e=>handleBlockMouseDown(e,b.id)}
+                  onDoubleClick={e=>handleBlockDblClick(e,b.id)}
+                >
+                  <BlockShape
+                    type={b.type} label={b.label}
+                    color={cfg.color} textColor={cfg.textColor}
+                    selected={isSel} w={bw} h={bh}
+                  />
+                  {/* port handles — only show when selected or hovering */}
+                  {isSel && (
+                    <div style={{position:'absolute',inset:0,pointerEvents:'none'}}>
+                      {['top','bottom','left','right'].map(side=>{
+                        const p=portPos(b,side);
+                        return (
+                          <div key={side} className="port"
+                            style={{left:p.x-b.x-5.5, top:p.y-b.y-5.5, pointerEvents:'all'}}
+                            onMouseDown={e=>{e.stopPropagation();handlePortMouseDown(e,b.id,side);}}
+                            onMouseUp={e=>handlePortMouseUp(e,b.id,side)}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                  {/* also allow drop on any block even if not selected */}
+                  {!isSel && drawConn && (
+                    <div style={{position:'absolute',inset:0,zIndex:55}}
+                      onMouseUp={e=>{
+                        // find nearest side
+                        const rect=e.currentTarget.getBoundingClientRect();
+                        const cx=e.clientX-rect.left, cy=e.clientY-rect.top;
+                        const bww=b.type==='decision'?DIAMOND_W:BLOCK_W;
+                        const bhh=b.type==='decision'?DIAMOND_H:BLOCK_H;
+                        const dists={top:cy,bottom:bhh-cy,left:cx,right:bww-cx};
+                        const side=Object.entries(dists).sort((a,b)=>a[1]-b[1])[0][0];
+                        handlePortMouseUp(e,b.id,side);
+                      }}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {editingBlock && (
+        <EditBlockModal
+          block={editingBlock}
+          onSave={label=>{
+            setBlocks(prev=>prev.map(b=>b.id===editingBlock.id?{...b,label}:b));
+            setEditingBlock(null);
+            showToast('✅ Texto atualizado');
+          }}
+          onClose={()=>setEditingBlock(null)}
+        />
+      )}
+
+      {toast && <Toast message={toast} onDone={()=>setToast(null)}/>}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   ORGANOGRAMA TAB
+════════════════════════════════════════════════════════ */
+function OrgTab() {
+  const [roles, setRoles] = useState(()=>{
+    try { const s=localStorage.getItem('org_data_v4'); return s?JSON.parse(s):DEFAULT_ROLES; } catch{return DEFAULT_ROLES;}
+  });
+  const [history,     setHistory]     = useState([]);
+  const [selectedId,  setSelectedId]  = useState(null);
+  const [showDetails, setShowDetails] = useState(true);
+  const [scale,       setScale]       = useState(1);
+  const [pan,         setPan]         = useState({x:0,y:0});
+  const [toast,       setToast]       = useState(null);
+
+  const dragging  = useRef(null);
+  const panning   = useRef(null);
+  const canvasRef = useRef(null);
+
+  useEffect(()=>{ localStorage.setItem('org_data_v4',JSON.stringify(roles)); },[roles]);
+
+  const showToast = t => setToast(t);
+  const pushHistory = prev => setHistory(h=>[...h.slice(-29),prev]);
+
+  const undo = useCallback(()=>{
+    if (!history.length) return;
+    setRoles(history[history.length-1]);
+    setHistory(h=>h.slice(0,-1));
+    showToast('↩️ Desfeito');
+  },[history]);
+
+  useEffect(()=>{
+    const fn=e=>{ if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();} };
+    window.addEventListener('keydown',fn);
+    return ()=>window.removeEventListener('keydown',fn);
+  },[undo]);
+
+  const startDrag=(cx,cy,id)=>{
+    const r=roles.find(r=>r.id===id);
+    setSelectedId(id);
+    dragging.current={id,startX:cx,startY:cy,origX:r.x,origY:r.y};
+  };
+  const handleMouseDown=(e,id)=>{ if(e.target.closest('.no-drag')) return; e.stopPropagation(); startDrag(e.clientX,e.clientY,id); };
+  const handleTouchStart=(e,id)=>{ if(e.target.closest('.no-drag')) return; e.stopPropagation(); startDrag(e.touches[0].clientX,e.touches[0].clientY,id); };
+  const handleCanvasMouseDown=e=>{
+    if(e.button===1||e.button===2){e.preventDefault();panning.current={startX:e.clientX-pan.x,startY:e.clientY-pan.y};}
+    if(e.button===0&&e.target===canvasRef.current) setSelectedId(null);
+  };
+  const moveCard=(cx,cy)=>{
+    if (!dragging.current) return;
+    const d=dragging.current;
+    setRoles(prev=>prev.map(r=>r.id===d.id?{...r,x:d.origX+(cx-d.startX)/scale,y:d.origY+(cy-d.startY)/scale}:r));
+  };
+  const handleMouseMove=e=>{ moveCard(e.clientX,e.clientY); if(panning.current) setPan({x:e.clientX-panning.current.startX,y:e.clientY-panning.current.startY}); };
+  const handleTouchMove=e=>moveCard(e.touches[0].clientX,e.touches[0].clientY);
+  const handleMouseUp=()=>{ dragging.current=null; panning.current=null; };
+
+  const handleWheel=e=>{ e.preventDefault(); setScale(s=>Math.min(2.5,Math.max(0.25,s*(e.deltaY>0?0.9:1.1)))); };
+  useEffect(()=>{
+    const el=canvasRef.current; if(!el) return;
+    el.addEventListener('wheel',handleWheel,{passive:false});
+    return ()=>el.removeEventListener('wheel',handleWheel);
+  },[]);
+
+  const addRole=()=>{
+    pushHistory(roles);
+    const id=Date.now().toString();
+    setRoles(prev=>[...prev,{id,title:'Nova Função',person:'Nome',x:200+Math.random()*300,y:200+Math.random()*100,color:PALETTE[Math.floor(Math.random()*PALETTE.length)],parentId:selectedId||null,activities:[],flow:[]}]);
+    setSelectedId(id); showToast('✅ Cargo adicionado');
+  };
+  const updateSelected=(field,value)=>setRoles(prev=>prev.map(r=>r.id===selectedId?{...r,[field]:value}:r));
+  const deleteRole=id=>{ if(!confirm('Excluir este cargo?')) return; pushHistory(roles); setRoles(prev=>prev.filter(r=>r.id!==id).map(r=>r.parentId===id?{...r,parentId:null}:r)); setSelectedId(null); showToast('🗑️ Cargo removido'); };
+  const exportJson=()=>{ const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([JSON.stringify(roles,null,2)],{type:'application/json'})),download:'organograma.json'}); a.click(); showToast('💾 Arquivo salvo'); };
+  const importJson=e=>{ const file=e.target.files[0]; if(!file) return; const r=new FileReader(); r.onload=ev=>{ try{ const j=JSON.parse(ev.target.result); if(!Array.isArray(j)) throw new Error('Inválido'); pushHistory(roles); setRoles(j); showToast('📂 Carregado'); }catch(err){alert('Erro: '+err.message);} }; r.readAsText(file); e.target.value=''; };
+  const clearCanvas=()=>{ if(!confirm('Apagar tudo?')) return; pushHistory(roles); setRoles(DEFAULT_ROLES); setSelectedId(null); showToast('🆕 Novo quadro'); };
+  const exportPng=async()=>{ showToast('📸 Gerando...'); try{ const c=await html2canvas(canvasRef.current,{backgroundColor:'#f1f5f9',scale:2,useCORS:true}); Object.assign(document.createElement('a'),{href:c.toDataURL('image/png'),download:'organograma.png'}).click(); showToast('✅ Exportado!'); }catch{ alert('Erro.'); } };
+
+  const sel=roles.find(r=>r.id===selectedId);
+
+  return (
+    <div className="workspace">
+      <aside className="sidebar no-print">
+        <div className="sidebar-body">
+          {history.length>0 && <button className="btn-undo" onClick={undo}>↩️ Desfazer &nbsp;<span style={{fontFamily:'DM Mono',color:'#94a3b8',fontSize:10}}>Ctrl+Z</span></button>}
+          <button className="btn-primary" onClick={addRole}><span style={{fontSize:16,lineHeight:1}}>+</span> Novo Cargo</button>
+
+          {sel ? (
+            <div className="field-group">
+              <div className="config-header">
+                <span className="config-title">Configurar Cargo</span>
+                <button className="config-close" onClick={()=>setSelectedId(null)}>Fechar</button>
+              </div>
+              <div className="field-section">
+                <label className="field-label">Cargo / Responsável</label>
+                <input className="input-text" type="text" value={sel.title} onChange={e=>updateSelected('title',e.target.value)} placeholder="Nome do cargo"/>
+                <input className="input-text" type="text" value={sel.person} onChange={e=>updateSelected('person',e.target.value)} placeholder="Responsável"/>
+              </div>
+              <div className="field-section">
+                <label className="field-label">Superior Hierárquico</label>
+                <select className="input-select" value={sel.parentId||''} onChange={e=>updateSelected('parentId',e.target.value||null)}>
+                  <option value="">Sem Superior</option>
+                  {roles.filter(r=>r.id!==selectedId).map(r=><option key={r.id} value={r.id}>{r.title} — {r.person}</option>)}
+                </select>
+              </div>
+              <div className="field-section">
+                <label className="field-label">Cor do Card</label>
+                <div className="palette">
+                  {PALETTE.map(c=><button key={c} className={`palette-dot${sel.color===c?' active':''}`} style={{background:c}} onClick={()=>updateSelected('color',c)}/>)}
+                  <input type="color" className="palette-color-input" value={sel.color} onChange={e=>updateSelected('color',e.target.value)}/>
+                </div>
+              </div>
+              <div className="field-section">
+                <label className="field-label">📌 Atividades</label>
+                <textarea className="input-textarea no-drag" value={sel.activities?.join('\n')||''} onChange={e=>updateSelected('activities',e.target.value.split('\n'))} placeholder="Uma por linha..."/>
+              </div>
+              <div className="field-section">
+                <label className="field-label">🔄 Fluxograma (notas)</label>
+                <textarea className="input-textarea no-drag" value={sel.flow?.join('\n')||''} onChange={e=>updateSelected('flow',e.target.value.split('\n'))} placeholder="Etapas do fluxo..."/>
+              </div>
+              <button className="btn-delete" onClick={()=>deleteRole(selectedId)}>Excluir Cargo</button>
+            </div>
+          ) : (
+            <div className="empty-state"><p>Clique em um card para editar</p></div>
+          )}
+
+          <hr className="section-divider"/>
+          <div className="zoom-section">
+            <span className="zoom-label">🔍 Zoom — {Math.round(scale*100)}%</span>
+            <input type="range" min="25" max="250" value={Math.round(scale*100)} onChange={e=>setScale(e.target.value/100)}/>
+            <button className="btn-secondary" style={{width:'100%'}} onClick={()=>{setScale(1);setPan({x:0,y:0});}}>Resetar Zoom</button>
+          </div>
+        </div>
+        <div className="sidebar-footer">
+          <div className="footer-row">
+            <button className="btn-secondary" onClick={exportJson}>💾 Salvar JSON</button>
+            <label className="btn-secondary" style={{cursor:'pointer'}}>📂 Abrir JSON<input type="file" accept=".json" onChange={importJson} style={{display:'none'}}/></label>
+          </div>
+          <div className="footer-row">
+            <button className="btn-secondary" onClick={exportPng}>📸 PNG</button>
+            <button className="btn-secondary" onClick={()=>window.print()}>🖨️ Imprimir</button>
+            <button className="btn-icon" onClick={clearCanvas} title="Novo Quadro">🗑️</button>
+          </div>
+        </div>
+      </aside>
+
+      <div className="canvas-area">
+        <div className="canvas-toolbar no-print">
+          <button className={`btn-details ${showDetails?'on':'off'}`} onClick={()=>setShowDetails(v=>!v)}>
+            {showDetails?'👁️ Detalhes On':'👁️ Detalhes Off'}
+          </button>
+        </div>
+        <div className="canvas-hint no-print">Scroll = zoom · Btn direito = mover</div>
+        <div ref={canvasRef} className="canvas-grid"
+          onMouseDown={handleCanvasMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleMouseUp}
+          onContextMenu={e=>e.preventDefault()}
+        >
+          <div className="canvas-world" style={{transform:`translate(${pan.x}px,${pan.y}px) scale(${scale})`,transformOrigin:'0 0'}}>
+            <svg style={{position:'absolute',inset:0,width:'100%',height:'100%',overflow:'visible',pointerEvents:'none'}}>
+              <defs>
+                <marker id="oarr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0,8 3,0 6" fill="#94a3b8"/>
+                </marker>
+              </defs>
+              {roles.map(role=>{
+                if (!role.parentId) return null;
+                const p=roles.find(r=>r.id===role.parentId); if(!p) return null;
+                const sx=p.x+ORG_CARD_W/2, sy=p.y+ORG_CARD_H;
+                const ex=role.x+ORG_CARD_W/2, ey=role.y;
+                const my=(sy+ey)/2;
+                return <path key={`p-${role.id}`} d={`M${sx} ${sy} C${sx} ${my},${ex} ${my},${ex} ${ey}`} fill="none" stroke="#cbd5e1" strokeWidth={2} markerEnd="url(#oarr)"/>;
+              })}
+            </svg>
+            {roles.map(role=>{
+              const acts=role.activities?.filter(a=>a.trim())||[];
+              const flows=role.flow?.filter(f=>f.trim())||[];
+              return (
+                <div key={role.id} className={`org-card${selectedId===role.id?' selected':''}`}
+                  style={{left:role.x,top:role.y,borderTopColor:role.color}}
+                  onMouseDown={e=>handleMouseDown(e,role.id)}
+                  onTouchStart={e=>handleTouchStart(e,role.id)}
+                >
+                  <div className="card-inner">
+                    <div className="card-title-row">
+                      <div className="card-dot" style={{background:role.color}}/>
+                      <div className="card-title">{role.title}</div>
+                    </div>
+                    <div className="card-person">{role.person}</div>
+                    {showDetails&&(acts.length>0||flows.length>0)&&(
+                      <div className="card-tags">
+                        {acts.length>0&&<span className="tag tag-act">📌 {acts.length} Ativ.</span>}
+                        {flows.length>0&&<span className="tag tag-flow">🔄 {flows.length} Fluxos</span>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      {toast && <Toast message={toast} onDone={()=>setToast(null)}/>}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   FLUXOGRAMA TAB (role picker + canvas)
+════════════════════════════════════════════════════════ */
+function FluxTab() {
+  const [roles] = useState(()=>{
+    try { const s=localStorage.getItem('org_data_v4'); return s?JSON.parse(s):DEFAULT_ROLES; } catch{return DEFAULT_ROLES;}
+  });
+  const [activeRole, setActiveRole] = useState(null);
+
+  /* sync roles from storage whenever tab becomes visible */
+  const [roleList, setRoleList] = useState(roles);
+  useEffect(()=>{
+    const handler = () => {
+      try { const s=localStorage.getItem('org_data_v4'); if(s) setRoleList(JSON.parse(s)); } catch{}
+    };
+    window.addEventListener('focus',handler);
+    return ()=>window.removeEventListener('focus',handler);
+  },[]);
+
+  /* refresh role list from localStorage on mount */
+  useEffect(()=>{
+    try { const s=localStorage.getItem('org_data_v4'); if(s) setRoleList(JSON.parse(s)); } catch{}
+  },[]);
+
+  if (activeRole) {
+    return (
+      <div style={{display:'flex',flexDirection:'column',flex:1,overflow:'hidden'}}>
+        {/* sub-header */}
+        <div style={{background:'#fff',borderBottom:'1px solid #e2e8f0',padding:'0 20px',display:'flex',alignItems:'center',gap:12,height:40,flexShrink:0}}>
+          <button onClick={()=>setActiveRole(null)}
+            style={{background:'none',border:'none',color:'#3b82f6',fontWeight:700,fontSize:12,cursor:'pointer',display:'flex',alignItems:'center',gap:4}}>
+            ← Cargos
+          </button>
+          <div style={{width:1,height:20,background:'#e2e8f0'}}/>
+          <div style={{width:10,height:10,borderRadius:'50%',background:activeRole.color}}/>
+          <span style={{fontSize:13,fontWeight:700,color:'#1e293b'}}>{activeRole.title}</span>
+          <span style={{fontSize:12,color:'#94a3b8'}}>— {activeRole.person}</span>
+        </div>
+        <FluxCanvas roleId={activeRole.id} roleColor={activeRole.color}/>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{flex:1,overflow:'auto',padding:32,display:'flex',flexDirection:'column',gap:20,alignItems:'flex-start'}}>
+      <div>
+        <div style={{fontSize:18,fontWeight:900,color:'#1e293b',marginBottom:4}}>Fluxogramas por Cargo</div>
+        <div style={{fontSize:13,color:'#64748b'}}>Selecione um cargo para abrir ou criar seu fluxograma de atividades.</div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:12,width:'100%',maxWidth:900}}>
+        {roleList.map(role=>{
+          const hasFlux = (() => { try{ const s=localStorage.getItem(`flux_v1_${role.id}`); if(s){const d=JSON.parse(s);return d.blocks?.length>0;} }catch{} return false; })();
+          return (
+            <button key={role.id} onClick={()=>setActiveRole(role)}
+              style={{
+                display:'flex',alignItems:'center',gap:14,
+                background:'#fff',border:'1px solid #e2e8f0',borderRadius:12,
+                padding:'16px 18px',cursor:'pointer',textAlign:'left',
+                borderLeft:`5px solid ${role.color}`,
+                boxShadow:'0 2px 10px rgba(0,0,0,0.05)',
+                transition:'box-shadow 0.15s, transform 0.15s',
+              }}
+              onMouseEnter={e=>{e.currentTarget.style.boxShadow='0 6px 20px rgba(0,0,0,0.10)';e.currentTarget.style.transform='translateY(-2px)';}}
+              onMouseLeave={e=>{e.currentTarget.style.boxShadow='0 2px 10px rgba(0,0,0,0.05)';e.currentTarget.style.transform='none';}}
+            >
+              <div style={{width:36,height:36,borderRadius:10,background:role.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>
+                🔄
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:800,color:'#1e293b',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{role.title}</div>
+                <div style={{fontSize:11,color:'#94a3b8',marginTop:1}}>{role.person}</div>
+                {hasFlux && <div style={{fontSize:10,color:'#16a34a',fontWeight:700,marginTop:3}}>✓ Fluxo criado</div>}
+                {!hasFlux && <div style={{fontSize:10,color:'#94a3b8',marginTop:3}}>Sem fluxograma</div>}
+              </div>
+              <div style={{color:'#cbd5e1',fontSize:18}}>›</div>
+            </button>
+          );
+        })}
+        {roleList.length===0&&(
+          <div style={{color:'#94a3b8',fontSize:13,padding:'20px 0'}}>
+            Nenhum cargo cadastrado ainda. Crie cargos na aba Organograma.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   ROOT APP
+════════════════════════════════════════════════════════ */
+const App = () => {
+  const [tab, setTab] = useState('org');
+
+  return (
+    <div className="app">
+      {/* Top nav */}
+      <nav className="top-nav">
+        <div className="nav-logo">
+          <span className="nav-logo-badge">GO</span> GESTÃO
+        </div>
+        <div className="nav-tabs">
+          <button className={`nav-tab${tab==='org'?' active':''}`} onClick={()=>setTab('org')}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect x="1" y="1" width="4" height="3" rx="1" fill="currentColor" opacity=".7"/>
+              <rect x="5" y="6" width="4" height="3" rx="1" fill="currentColor"/>
+              <rect x="1" y="10" width="4" height="3" rx="1" fill="currentColor" opacity=".5"/>
+              <rect x="9" y="10" width="4" height="3" rx="1" fill="currentColor" opacity=".5"/>
+              <line x1="3" y1="4" x2="7" y2="6" stroke="currentColor" strokeWidth="1"/>
+              <line x1="7" y1="9" x2="3" y2="10" stroke="currentColor" strokeWidth="1"/>
+              <line x1="7" y1="9" x2="11" y2="10" stroke="currentColor" strokeWidth="1"/>
+            </svg>
+            Organograma
+          </button>
+          <button className={`nav-tab${tab==='flux'?' active':''}`} onClick={()=>setTab('flux')}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect x="1" y="5" width="4" height="3" rx="1" fill="currentColor" opacity=".7"/>
+              <polygon points="5,3 9,6.5 5,10" fill="currentColor" opacity=".4"/>
+              <rect x="9" y="2" width="4" height="3" rx="1.5" fill="currentColor"/>
+              <rect x="9" y="9" width="4" height="3" rx="1.5" fill="currentColor"/>
+            </svg>
+            Fluxogramas
+          </button>
+        </div>
+      </nav>
+
+      {/* Content */}
+      <div style={{display:'flex',flex:1,overflow:'hidden'}}>
+        {tab==='org'  && <OrgTab/>}
+        {tab==='flux' && <FluxTab/>}
+      </div>
+    </div>
+  );
 };
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
